@@ -1,0 +1,81 @@
+---
+title: "Summary of Metagenomic Read Assembly"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = FALSE)
+options(scipen=999)
+cpal=4
+```
+
+## Steps Run
+
+```{r, echo=FALSE}
+sfile=read.table(commandArgs(trailingOnly=T)[1],sep="\t",header=T)
+assemblers=paste(unique(sfile$assembler),collapse=", ")
+fcount=length(unique(sfile$file))
+
+``` 
+
+Metagenomic assembly carried out for **`r fcount`** files using **`r assemblers`**
+
+# Per Method Summaries
+
+```{r, echo=FALSE, results="asis"}
+library(ggplot2)
+library(reshape2)
+
+for(i in unique(sfile$assembler)){
+  cat(paste0("## ",i,"\n"))
+  cat("Contig summary statistics (Mean$\\pm$SD)\n\n")
+  methres=sfile[which(sfile$assembler==i),]
+  mncont=mean(methres$n_contigs)
+  sdncont=sd(methres$n_contigs)
+  cat(paste0("**No. Contigs:** ",format(round(mncont),big.mark = ",")," $\\pm$ ",format(round(sdncont),big.mark=","),"\n\n"))
+  mnbp=mean(methres$contig_bp)
+  sdbp=sd(methres$contig_bp)
+  cat(paste0("**Total Contig Length (bp):** ",format(round(mnbp),big.mark = ",")," $\\pm$ ",format(round(sdbp),big.mark=","),"\n\n"))
+  mn50=mean(methres$ctg_N50)
+  sd50=sd(methres$ctg_N50)
+  cat(paste0("**N50:** ",format(round(mn50),big.mark = ",")," $\\pm$ ",format(round(sd50),big.mark=","),"\n\n"))
+  mnl50=mean(methres$ctg_L50)
+  sdl50=sd(methres$ctg_L50)
+  cat(paste0("**L50:** ",format(round(mnl50),big.mark = ",")," $\\pm$ ",format(round(sdl50),big.mark=","),"\n\n"))
+  methres=methres[,c(1,3,4,6,7)]
+  colnames(methres)=c("File","No. Contigs","Total Contig\nLength (bp)","N50","L50")
+  methres=methres[order(methres$`No. Contigs`),]
+  methmelt=melt(methres,id=c(1))
+  methmelt$File=factor(methmelt$File,levels=as.character(methres$File))
+  mplot=ggplot(methmelt,aes(x=File,y=value,fill=variable))+geom_bar(stat="identity")+facet_grid(~variable,scales="free_x")+
+    theme_classic()+coord_flip()+scale_fill_brewer(type = "qual", palette = 5)+guides(fill=FALSE)+
+    theme(axis.text.x = element_text(angle = 45,hjust = 1,size=8),axis.text.y =element_text(size = 8))+
+    theme(axis.title = element_blank())
+  plot(mplot)
+  cat("\n\n")
+}
+```
+
+```{r echo=FALSE, results="asis"}
+if(length(unique(sfile$assembler))>1){
+  cat("# Inter-method Comparisons\n\n")
+  cat("## Across all samples\n\n")
+  summ=sfile[,c(1,2,3,4,6,7)]
+  colnames(summ)=c("File","Assembler","No. Contigs","Total Contig\nLength (bp)","N50","L50")
+  summ=summ[order(summ$`No. Contigs`),]
+  smelt=melt(summ,id=c(1,2))
+  smelt$File=factor(smelt$File,levels=unique(as.character(summ$File)))
+  bplot=ggplot(smelt,aes(x=Assembler,y=value,color=Assembler))+geom_boxplot()+geom_jitter()+facet_wrap(~variable,scale="free_y")+theme_classic()+scale_color_brewer(type="qual",palette = cpal+1)+guides(fill=FALSE)+ylab("Value")
+plot(bplot)
+cat("\n\n")
+cat("## Per Sample\n\n")
+  sampplot=ggplot(smelt,aes(x=File,y=value,fill=Assembler))+geom_bar(stat="identity",position ="dodge")+facet_grid(~variable,scale="free_x")+theme_classic()+scale_fill_brewer(type="qual",palette = cpal+1)+coord_flip()+
+    theme(axis.title.x =element_blank(),legend.position = "bottom")+
+    theme(axis.text.x = element_text(angle = 45,hjust = 1,size=8),axis.text.y =element_text(size = 8))+
+    theme(axis.title = element_blank())
+plot(sampplot)
+cat("\n\n")
+}
+```

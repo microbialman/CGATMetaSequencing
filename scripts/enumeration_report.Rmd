@@ -1,0 +1,85 @@
+---
+title: "Metagenomic ORF and Feature Counting"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+options(scipen=999)
+cpal=4
+
+library(data.table)
+
+#read in the sample read counts
+readcounts=fread(commandArgs(trailingOnly=T)[1],header = T,sep="\t")
+readcounts=data.frame(readcounts)
+#read in the orf mapping counts
+orfcounts=fread(commandArgs(trailingOnly=T)[2],header=T,sep="\t",)
+orfcounts=data.frame(orfcounts,check.names = F)
+
+#match the orders
+mappings=c()
+for(i in readcounts$File){
+  mappings=c(mappings,grep(i,colnames(orfcounts)[2:ncol(orfcounts)]))
+}
+readcounts=readcounts[order(mappings),]
+
+filtreads=readcounts[,ncol(readcounts)]
+orftots=colSums(orfcounts[,2:ncol(orfcounts)])
+percents=(orftots/filtreads)*100
+names(percents)=readcounts$File
+```
+
+## Read Mapping
+
+**`r round(mean(filtreads))` $\pm$ `r round(sd(filtreads))`** (Mean$\pm$SD) reads were mapped across **`r nrow(orfcounts)`** ORFs.
+
+**`r round(mean(percents))` $\pm$ `r round(sd(percents))`** % of reads were mapped per sample (Mean$\pm$SD).
+
+```{r, echo=FALSE,message=FALSE,error=FALSE,warning=FALSE}
+library(ggplot2)
+library(cowplot)
+percents=data.frame(Sample=names(percents),Percent=percents)
+percents=percents[order(percents$Percent,decreasing = F),]
+percents$Sample = factor(percents$Sample,levels=as.character(percents$Sample))
+perplot=ggplot(percents,aes(x=Sample,y=Percent,fill=1))+geom_bar(stat="identity")+coord_flip()+guides(fill=F)+ylab("% Reads Mapped")+
+  theme(axis.text.y = element_text(size=8))
+plot(perplot)
+```
+
+## ORF Distribution
+
+```{r , echo=FALSE}
+uniquespersamp=colSums(orfcounts[,2:ncol(orfcounts)]!=0)
+orfobs=rowSums(orfcounts[,2:ncol(orfcounts)])
+```
+
+Each sample contained a mean of **`r round(mean(uniquespersamp))` $\pm$ `r round(sd(uniquespersamp))`** unique ORFs (Mean$\pm$SD).
+
+Each ORF was observed a mean of **`r round(mean(orfobs))` $\pm$ `r round(sd(orfobs))`** times across all samples (Mean$\pm$SD).
+
+```{r echo=FALSE,message=FALSE,error=FALSE,warning=FALSE}
+orfhist=qplot(orfobs,geom="histogram",fill=2)+scale_y_log10()+guides(fill=F)+ylab("log10(No. ORFs)")+xlab("Tot. No. Observations")
+plot(orfhist)
+```
+
+## Features Counted
+
+```{r echo=FALSE}
+library(stringr)
+library(knitr)
+
+dirstr=as.character(commandArgs(trailingOnly = T)[3])
+f=list.files(dirstr)
+feat=str_match(f,"(\\S+)_raw.tsv")
+feat=feat[,2]
+```
+
+A total of **`r length(f)`** features were counted across the ORFs.
+
+
+`r knitr::kable(feat, col.names="Features Counted")`
+
+

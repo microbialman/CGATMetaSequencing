@@ -1,0 +1,117 @@
+---
+title: "Summary of Metagenomic Read Filtering"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = FALSE)
+options(scipen=999)
+cpal=4
+```
+
+## Steps Run
+
+```{r, echo=FALSE}
+sfile=read.table(commandArgs(trailingOnly=T)[1],sep="\t",header=T)
+rrna="was"
+genome="was"
+if(length(which(is.na(sfile$Post_rRNA_Filtering))) >0){rrna="was not"}
+if(length(which(is.na(sfile$Post_Genome_Filtering))) >0){genome="was not"}
+filecount=length(levels(sfile$File))
+``` 
+
+Ribosomal RNA filtering **`r rrna`** carried out and host genome filtering **`r genome`** carried out on **`r filecount`** files.
+
+## Count Summaries
+
+```{r, echo=FALSE}
+if(rrna=="was not"){sfile$Post_rRNA_Filtering=sfile$Input}
+if(rrna=="was not"){sfile$Post_Genome_Filtering=sfile$Post_rRNA_Filtering}
+
+om=mean(sfile$Input)
+osd=sd(sfile$Input)
+omin=min(sfile$Input)
+omax=max(sfile$Input)
+
+rm=mean(sfile$Post_rRNA_Filtering)
+rsd=sd(sfile$Post_rRNA_Filtering)
+rmin=min(sfile$Post_rRNA_Filtering)
+rmax=max(sfile$Post_rRNA_Filtering)
+
+gm=mean(sfile$Post_Genome_Filtering)
+gsd=sd(sfile$Post_Genome_Filtering)
+gmin=min(sfile$Post_Genome_Filtering)
+gmax=max(sfile$Post_Genome_Filtering)
+
+```
+
+The **`r filecount`** input files contained **`r format(round(om),big.mark=",")` $\pm$ `r format(round(osd),big.mark=",")`** reads (Mean$\pm$SD), with a range of (**`r format(omin,big.mark=",")`-`r format(omax,big.mark=",")`**).
+
+After rRNA filtering files contained **`r format(round(rm),big.mark=",")` $\pm$ `r format(round(rsd),big.mark=",")`** reads (Mean$\pm$SD), with a range of (**`r format(rmin,big.mark=",")`-`r format(rmax,big.mark=",")`**).
+
+After host genome filtering files contained **`r format(round(gm),big.mark=",")` $\pm$ `r format(round(gsd),big.mark=",")`** reads (Mean$\pm$SD), with a range of (**`r format(gmin,big.mark=",")`-`r format(gmax,big.mark=",")`**).
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(reshape2)
+colnames(sfile)=c("File","Input File","Post rRNA Filtering","Post Host Genome Filtering")
+meltsfile=melt(sfile,id.vars =1)
+readplot=ggplot(meltsfile,aes(x=variable,y=value,color=variable))+xlab("")+ylab("Read Count")+geom_boxplot()+geom_jitter()+theme_classic()+guides(fill=FALSE,color=FALSE)+scale_color_brewer(type="qual",palette = cpal)
+readplot
+```
+
+
+
+## Relative Contribution of rRNA and Host Reads
+```{r, echo=FALSE}
+counts=matrix(nrow=nrow(sfile),ncol=3)
+rownames(counts)=sfile$File
+colnames(counts)=c("Unfiltered","rRNA","Host Genome")
+
+counts[,3]=sfile$`Post rRNA Filtering`-sfile$`Post Host Genome Filtering`
+counts[,2]=sfile$`Input File`-sfile$`Post rRNA Filtering`
+counts[,1]=sfile$`Post Host Genome Filtering`
+counts=data.frame(counts)
+counts=counts[order(rowSums(counts)),]
+
+percentages=data.frame((counts/rowSums(counts))*100)
+percentages=percentages[order(percentages$Unfiltered),]
+
+```
+
+An average of **`r format(mean(percentages$Unfiltered),digits=3)`**% of reads remained after filtering, with an average of **`r format(mean(percentages$rRNA),digits=3)`**% and **`r format(mean(percentages$Host.Genome),digits=3)`**% aligning to rRNA and host genome sequences respectively.
+
+```{r echo=FALSE}
+percentmelt=melt(as.matrix(percentages))
+countmelt=melt(as.matrix(counts))
+newnames=c("Sample","Source","Value")
+colnames(percentmelt)=newnames
+colnames(countmelt)=newnames
+
+percentmelt$Sample=factor(percentmelt$Sample,levels=rownames(percentages))
+countmelt$Sample=factor(countmelt$Sample,levels=rownames(counts))
+
+pplot=ggplot(percentmelt,aes(x=Sample,y=Value,fill=Source))+geom_bar(stat="identity")+coord_flip()+theme_classic()+
+  xlab("Input File")+ylab("% Input Reads")+scale_fill_brewer(type="qual",palette=cpal)
+
+cplot=ggplot(countmelt,aes(x=Sample,y=Value,fill=Source))+geom_bar(stat="identity")+coord_flip()+theme_classic()+
+  xlab("Input File")+ylab("n Input Reads")+scale_fill_brewer(type="qual",palette=cpal)
+
+pplot
+cplot
+
+```
+
+## Output
+Output files contain **`r format(round(gm),big.mark=",")` $\pm$ `r format(round(gsd),big.mark=",")`** reads (Mean$\pm$SD), with a range of (**`r format(gmin,big.mark=",")`-`r format(gmax,big.mark=",")`**).
+
+```{r echo=FALSE}
+counts=counts[order(counts$Unfiltered),]
+countmelt$Sample=factor(countmelt$Sample,levels=rownames(counts))
+outplot=ggplot(countmelt[which(countmelt$Source=="Unfiltered"),],aes(x=Sample,y=Value,fill=Source))+geom_bar(stat="identity")+theme_classic()+scale_fill_brewer(type="qual",palette=cpal)+guides(fill=FALSE)+coord_flip()+ylab("n Reads Passing All Filters")
+
+outplot              
+```
+
+
+

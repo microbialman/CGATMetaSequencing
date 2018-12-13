@@ -1,0 +1,83 @@
+---
+title: "Metagenomic ORF Detection and Annotation"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+options(scipen=999)
+cpal=4
+
+library(data.table)
+
+#read in the gtf summary table
+gtf=fread(commandArgs(trailingOnly=T)[1],header = T,sep="\t")
+
+```
+
+## ORF Detection
+
+```{r, echo=FALSE}
+
+nocontigs=length(unique(gtf$Contig))
+noorfs=length(unique(gtf$ORF))
+orfspercon=table(gtf$Contig)
+
+```
+
+A total of **`r noorfs`** ORFs were detected across **`r nocontigs`** contigs.
+
+There were **`r round(mean(orfspercon))` $\pm$ `r round(sd(orfspercon))`** (Mean $\pm$ SD) ORFs per contig (Range `r min(orfspercon)` - `r max(orfspercon)`).
+
+```{r, echo=FALSE}
+library(ggplot2)
+library(RColorBrewer)
+orfsperconplot = ggplot(data.frame(orfspercon),aes(x=Freq))+geom_histogram(bins = 50,fill=brewer.pal(3,"Accent")[1])+theme_classic()+ylab("log10(No. Contigs)")+xlab("No. ORFs")+guides(fill=FALSE)+scale_y_log10()
+plot(orfsperconplot)
+```
+
+ORFs had a length of **`r round(mean(gtf$Size))` $\pm$ `r round(sd(gtf$Size)) `bp** (Mean$\pm$SD) (Range `r min(gtf$Size)` - `r max(gtf$Size)`).
+
+```{r, echo=FALSE}
+orflenhist = ggplot(gtf,aes(Size))+geom_histogram(bins = 50,fill=brewer.pal(3,"Accent")[2])+theme_classic()+ylab("log10(ORF Count)")+xlab("ORF Size")+guides(fill=FALSE)+scale_y_log10()
+plot(orflenhist)
+```
+
+## Taxonomic Annotation
+
+Taxonomy was assigned at some level for **`r round(100-(length(which(is.na(gtf$Taxa)))/nrow(gtf))*100)`%** of ORFs.
+
+## Functional Annotation
+ 
+```{r, echo=FALSE}
+noannot=length(which(is.na((gtf$No_GO_Terms))))
+perannot=round((1-(noannot/nrow(gtf)))*100)
+meango = format(mean(gtf$No_GO_Terms,na.rm=T),digits = 3)
+meankeg = format(mean(gtf$No_KEGG_KOs,na.rm=T),digits = 3)
+meanogs = format(mean(gtf$No_OGs,na.rm=T),digits = 3)
+meancogs = format(mean(gtf$No_COG_Cats,na.rm=T),digits=3)
+
+
+sdgo = format(sd(gtf$No_GO_Terms,na.rm=T),digits = 3)
+sdkeg = format(sd(gtf$No_KEGG_KOs,na.rm=T),digits = 3)
+sdogs = format(sd(gtf$No_OGs,na.rm=T),digits = 3)
+sdcogs = format(sd(gtf$No_COG_Cats,na.rm=T),digits=3)
+
+pergo=round((length(which(gtf$No_GO_Terms>0))/nrow(gtf))*100)
+perko=round((length(which(gtf$No_KEGG_KOs>0))/nrow(gtf))*100)
+perogs=round((length(which(gtf$No_OGs>0))/nrow(gtf))*100)
+percogs=round((length(which(gtf$No_COG_Cats>0))/nrow(gtf))*100)
+```
+
+**`r perannot`%** of ORFs were assigned at least one functional annotation using EggNog-Mapper.
+
+```{r, echo=FALSE}
+library(knitr)
+formed=data.frame(cbind(c(meango,meankeg,meanogs,meancogs),c(sdgo,sdkeg,sdogs,sdcogs),c(pergo,perko,perogs,percogs)))
+rownames(formed)=c("GO Terms","KEGG KOs","EggNOG OGs","COG Categories")
+colnames(formed)=c("Mean Number per ORF","SD Number per ORF","Percent ORFs with at Least One")
+kable(formed,caption="Functional annotation summaries per annotation type.")
+
+```
