@@ -1,4 +1,6 @@
-'''classes and utility functions for pipeline_MetaAssemblyKit.py
+'''classes and utility functions for pipeline_assembly.py
+
+Also contains a generic SequencingData class, used throughout the MetaSequencing pipelines.
 
 Different assembly tools will use different inputs. Some can take
 fasta files whereas others will take fastq and in either case can be
@@ -11,8 +13,8 @@ and locations will also differ slightly.
 import os
 import re
 import glob
-import CGAT.IOTools as IOTools
-import CGATPipelines.Pipeline as P
+import cgatcore.iotools as IOTools
+import cgatcore.pipeline as P
 
 '''
 object for sequencing data
@@ -40,7 +42,7 @@ class SequencingData:
         self.head = []
         '''check file can be opened on init & capture header (first 5 lines used for interleave and format checks)'''
         try:
-            self.openfile = IOTools.openFile(self.filepath)
+            self.openfile = IOTools.open_file(self.filepath)
         except FileNotFoundError as e:
             raise Exception("cannot open file {}".format(self.filepath)) from e
         self.head = [self.openfile.readline().rstrip("\n") for x in range(5)]
@@ -100,7 +102,7 @@ class SequencingData:
     '''count number of reads in the file using IOTools
     this is not run on initialisation'''
     def readCount(self):
-        count = IOTools.getNumLines(self.filepath, ignore_comments=False)
+        count = IOTools.get_num_lines(self.filepath, ignore_comments=False)
         divisor = 2
         if self.fileformat == "fastq":
             divisor = 4
@@ -190,6 +192,7 @@ class Megahit(Assembler):
         methlist.append("--min-contig-len {}".format(self.params[m+"min_contig_len"]))
         if self.params[m+"keep_tmp_files"] != "false":
             methlist.append("--keep-tmp-files")
+        methlist.append("--continue")
         self.methcall = " ".join(methlist)
         
     def build(self):

@@ -1,0 +1,87 @@
+################################################################
+#
+# Pipeline pipeline_metaassemblykit.py configuration file
+#
+################################################################
+
+# "true/false" flags will add or remove command flags 
+
+################################################################
+#
+# Assembler options
+#
+################################################################
+
+Assembler:
+#valid assemblers are: megahit, metaspades, idba_ud (comma seperated list)
+  assemblers: "megahit,metaspades"
+
+#individual assembler options, see each tool's documentation for more information
+
+Megahit:
+  min_count: "2"
+#comma-seperated list of kmer sizes, must be odd, 15-255, increments <28, uses method below instead by default
+  use_k_list: "false"
+  k_list: "21,29,39,59,79,99,119,141"
+  k_min: "21"
+  k_max: "141"
+  k_step: "12"
+  no_mercy: "false"
+  bubble_level: "2"
+#merge complex bubbles of length <= l*kmer_size and similarity >= s (l,s)
+  merge_level: "20,0.95"
+  prune_level: "2"
+  prune_depth: "2"
+  low_local_ratio: "0.2"
+  max_tip_len: "-1"
+  no_local: "false"
+  kmin_1pass: "false"
+  presets: "false"
+  memory: "0.9"
+#graph builder memory mode, 0=minimum, 1=moderate, others = use all mem
+  mem_flag: "1"
+  num_cpu_threads: "false"
+  min_contig_len: "200"
+  keep_tmp_files: "false"
+  clus_memory: "16"
+  clus_threads: "16"
+
+
+Metaspades:
+  only_error_correction: "false"
+  only_assembler: "false"
+  continue: "false"
+  restart_from: "false"
+  disable_gzip_output: "false"
+  disable_rr: "false"
+  dataset: "false"
+  threads: "25"
+  memory: "10"
+  k: "auto"
+  phred_offset: "auto"
+
+
+IDBAUD:
+#minimum k value <=124
+  mink: "20"
+#max k value <= 124
+  maxk: "100"
+  step: "20"
+  inner_mink: "10"
+  inner_step: "5"
+  prefix: "3"
+  min_count: "2"
+  min_support: "1"
+  seed_kmer: "30"
+  min_contig: "200"
+  similar: "0.95"
+  max_mismatch: "3"
+  min_pairs: "3"
+  no_bubble: "false"
+  no_local: "false"
+  no_coverage: "false"
+  no_correct: "false"
+  pre_correction: "false"
+  clus_memory: "16"
+  clus_threads: "16"
+

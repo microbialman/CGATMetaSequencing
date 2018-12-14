@@ -1,10 +1,10 @@
 '''
-classes and utility functions for pipeline_MetaFilter.py
+classes and utility functions for pipeline_filter.py
 
 '''
 
 import os
-import PipelineMetaAssemblyKit
+import PipelineAssembly
 
 '''
 class to build call to SortMeRNA
@@ -279,17 +279,17 @@ def CleanUp(seqdat,outfile,params):
 
 #function to summarise reads filtered at each step
 def CountReads(infile,params):
-    original = PipelineMetaAssemblyKit.SequencingData(infile)
+    original = PipelineAssembly.SequencingData(infile)
     original.readCount()
     rrna = False
     genome = False
     rnadir = os.getcwd()+"/rrna_filter_out.dir/"
     gendir = os.getcwd()+"/genome_filter_out.dir/"
     if params["General_rrna_filter"] == "true":
-        rrna = PipelineMetaAssemblyKit.SequencingData(rnadir+original.cleanname+"/other_"+original.filename)
+        rrna = PipelineAssembly.SequencingData(rnadir+original.cleanname+"/other_"+original.filename)
         rrna.readCount()
     if params["General_host_filter"] == "true":
-        genome = PipelineMetaAssemblyKit.SequencingData(gendir+original.cleanname+"/hostfiltered_"+original.filename)
+        genome = PipelineAssembly.SequencingData(gendir+original.cleanname+"/hostfiltered_"+original.filename)
         genome.readCount()
     ocount=original.readcount
     if rrna == False:

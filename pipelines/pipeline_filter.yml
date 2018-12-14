@@ -1,0 +1,95 @@
+################################################################
+#
+# Pipeline pipeline_filter.py configuration file
+#
+################################################################
+
+# "true/false" flags will add or remove command flags 
+
+################################################################
+#
+# General options
+#
+################################################################
+General:
+#rrna filtering on or off (using sortmerna)
+  rrna_filter: "true"
+#host genome filtering on or off
+  host_filter: "true"
+
+#sortmerna settings
+SortMeRNA:
+#comma seperated list of paths to reference rna fastas to use for filtering
+  rna_refs: "/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/rfam-5.8s-database-id98.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/rfam-5s-database-id98.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-arc-16s-id95.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-arc-23s-id98.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-bac-16s-id90.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-bac-23s-id98.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-euk-18s-id95.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-euk-28s-id98.fasta"
+#comma seperated list of paths to refence indexes in an order matching the rna fastas above
+#if none provided (false) index files will be generated
+  rna_index: "false"
+  paired: "in"
+  fastx: "true"
+  sam: "false"
+  sq: "false"
+  blast: "false"
+  log: "true"
+  num_alignments: "false"
+  best: "false"
+  min_lis: "2"
+  print_all_reads: "false"
+  match: "2"
+  mismatch: "-3"
+  gap_open: "5"
+  gap_ext: "2"
+  n: "-3"
+  f: "false"
+  r: "false"
+  threads: "10"
+  e: "1"
+  memory: "1"
+  v: "false"
+
+#bowtie settings
+Bowtie:
+  genome_db: "/gfs/mirror/genomes/bowtie/mm10"
+  phred_type: "33"
+  mode: "end-to-end"
+  preset: "false"
+  n: "0"
+  l: "22"
+  i: "S,1,1.15"
+  n_ceil: "L,0,0.15"
+  dpad: "15"
+  gbar: "4"
+  ignore_quals: "false"
+  nofw: "false"
+  norc: "false"
+  no_1mm_upfront: "false"
+  ma: "0"
+  mp: "6"
+  np: "1"
+  rdg: "5,3"
+  rfg: "5,3"
+  score_min: "L,-0.6,-0.6"
+  reporting: "default"
+  d: "15"
+  r: "2"
+  minins: "0"
+  maxins: "500"
+  no_mixed: "false"
+  no_discordant: "false"
+  no_dovetail: "false"
+  no_contain: "false"
+  no_overlap: "false"
+  threads: "10"
+  memory: "1"
+
+#settings for extracting unmapped reads from mapping file
+#set the postive and negative flags for paired and unpaired data seperately
+Filtering:
+#positive samtools flags for paired data (f, to keep) 12= "only alignments with both reads unmapped"
+  paired_pos: "12"
+#negative samtools flags for paired data (f, not to keep) 256= "do not extract non-primary alignments"
+  paired_neg: "256"
+#positive samtools flags for unpaired data (f, to keep) 4= "read unmapped"
+  un_pos: "4"
+#negative samtools flags for unpaired data (f, not to keep) 256= "do not extract non-primary alignments"
+  un_neg: "256"
+

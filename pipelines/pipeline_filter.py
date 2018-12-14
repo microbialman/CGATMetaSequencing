@@ -4,9 +4,6 @@ Metagenome filtering pipeline
 =============================
 
 :Author: Matt Jackson
-:Release: $Id$
-:Date: |today|
-:Tags: Python
 
 Filters NGS data from metagenomics experiments to remove one or both of rRNA and host contaminant reads.
 Optionally retaining filtered reads.
@@ -22,13 +19,12 @@ mapped reads.
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
-information how to use CGAT pipelines.
+See cgat.org for  general information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.yml` file. 
 
 
 Input
@@ -60,22 +56,14 @@ Interleaved files should be detected automatically.
 Files containg 1 in the suffix will be assumed paired end and should be in the same 
 directory as the read 2 files, which share the same file name except for the read number.
 
-.. note::
-
-   Quality scores need to be of the same scale for all input files. Thus it might be
-   difficult to mix different formats.
-
-Optional inputs
-+++++++++++++++
-
 Requirements
 ------------
 
-On top of the default CGAT setup and the MetaAssemblyKit pipeline, the pipeline requires the following
+On top of the default CGAT setup and the MetaSequencing pipeline, the filtering requires the following
 software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
+|*Program*           |*Tested Version*   |*Purpose*                                       |
 +--------------------+-------------------+------------------------------------------------+
 |SortMeRNA           |2.1b               | Filter rRNA sequences                          |
 +--------------------+-------------------+------------------------------------------------+
@@ -94,10 +82,7 @@ Pipeline output
 The main output is fasta/fastq files filtered to remove the chosen rRNA/host reads.
 Optionally, the filtered reads can also be retained.
 
-Glossary
-========
-
-.. glossary::
+Running build_report will generate a summary of reads filtered per sample.
 
 Code
 ====
@@ -109,7 +94,8 @@ from ruffus import *
 import os
 import sys
 
-import PipelineMetaFilter
+import PipelineFilter
+import PipelineAssembly
 
 ###################################################
 ###################################################
@@ -117,15 +103,12 @@ import PipelineMetaFilter
 # Pipeline configuration
 ###################################################
 # load options from the config file
-import CGATPipelines.Pipeline as P
-P.getParameters(
-       ["%s.ini" % __file__[:-len(".py")],
-       "../pipeline.ini",
-       "pipeline.ini" ] )
+import cgatcore.pipeline as P
+P.get_parameters(
+       ["%s.yml" % __file__[:-len(".py")],
+       "../pipeline.yml",
+       "pipeline.yml" ] )
 PARAMS = P.PARAMS
-
-#add PipelineMetaAssemblyKit
-import PipelineMetaAssemblyKit
 
 
 #get all files within the directory to process
@@ -157,7 +140,7 @@ def checkEnabled():
 def makeSortMeRNAIndices(infile,outfile):
     #command to generate index files
     statement = "indexdb_rna --ref {},{}".format(infile,outfile.strip(".stats"))
-    P.run()
+    P.run(statement)
 
 #run SortMeRNA
 @follows(makeSortMeRNAIndices)
@@ -165,14 +148,14 @@ def makeSortMeRNAIndices(infile,outfile):
 @transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,
           r"rrna_filter_out.dir/\1/other_\1.\2")
 def runSortMeRNA(infile,outfile):
-    seqdat = PipelineMetaAssemblyKit.SequencingData(infile)
+    seqdat = PipelineAssembly.SequencingData(infile)
     if PARAMS["General_rrna_filter"] == "true":
-        sortmerna = PipelineMetaFilter.SortMeRNA(seqdat,outfile,PARAMS)
+        sortmerna = PipelineFilter.SortMeRNA(seqdat,outfile,PARAMS)
         if PARAMS["SortMeRNA_memory"] != "false":
             job_memory = str(PARAMS["SortMeRNA_memory"])+"G"
         else:
             job_memory = "1G"
-        job_threads = PARAMS["SortMeRNA_threads"]
+        job_threads = int(PARAMS["SortMeRNA_threads"])
         statement = sortmerna.build()
     else:
         #if skipping rRNA filtering symlink files and make appropriate directory
@@ -182,7 +165,7 @@ def runSortMeRNA(infile,outfile):
         if seqdat.paired == True and seqdat.interleaved == False:
             statementlist.append('ln -s {} rrna_filter_out.dir/{}/other_{}'.format(os.getcwd()+"/"+seqdat.pairedname,seqdat.cleanname,seqdat.pairedname))
         statement = " && ".join(statementlist)
-    P.run()
+    P.run(statement)
 
 ###################################################
 # Genome Alignment step
@@ -195,10 +178,10 @@ def runSortMeRNA(infile,outfile):
 @transform(runSortMeRNA,regex(r'rrna_filter_out.dir/(\S+)/other_(\S[^.]+.\S+)$'),
            r"genome_filter_out.dir/\1/\2.mapped.bam")
 def mapBowtie2(infile,outfile):
-    job_threads = PARAMS["Bowtie_threads"]
+    job_threads = int(PARAMS["Bowtie_threads"])
     job_memory = str(PARAMS["Bowtie_memory"])+"G"
-    seqdat = PipelineMetaAssemblyKit.SequencingData(infile)
-    bowtie = PipelineMetaFilter.Bowtie2(seqdat,outfile,PARAMS)
+    seqdat = PipelineAssembly.SequencingData(infile)
+    bowtie = PipelineFilter.Bowtie2(seqdat,outfile,PARAMS)
     statementlist = []
     #remove all comments from read names in files (trimming can add comments making non-matching readnames in pairs)
     statementlist.append(bowtie.cleanNames())
@@ -211,7 +194,7 @@ def mapBowtie2(infile,outfile):
     #remove the sam file
     statementlist.append("rm {}".format(outfile.replace(".bam",".sam")))
     statement = " && ".join(statementlist)
-    P.run()
+    P.run(statement)
 
 #filter the reads from the mapping output and convert to fasta/q file(s)
 @active_if(PARAMS["General_host_filter"] == "true")
@@ -220,21 +203,21 @@ def mapBowtie2(infile,outfile):
            r"genome_filter_out.dir/\1/hostfiltered_\2")
 def filterMapping(infile,outfile):
     #use the original sequencing file to pull pairedness, file format and compression
-    seqdat = PipelineMetaAssemblyKit.SequencingData(os.path.basename(infile.strip(".mapped.bam")))
-    filterer = PipelineMetaFilter.FilterFromBam(infile,outfile,seqdat,PARAMS)
+    seqdat = PipelineAssembly.SequencingData(os.path.basename(infile.strip(".mapped.bam")))
+    filterer = PipelineFilter.FilterFromBam(infile,outfile,seqdat,PARAMS)
     statementlist = []
     statementlist.append(filterer.build())
     statement = " && ".join(statementlist)
-    P.run()
+    P.run(statement)
 
 #symlink the appropriate outputfiles to a final clean directory
 @follows(filterMapping)
 @follows(mkdir("filtered_reads.dir"))
 @transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"filtered_reads.dir/filtered-\1.\2")
 def cleanUp(infile,outfile):
-    seqdat = PipelineMetaAssemblyKit.SequencingData(infile)
-    statement = PipelineMetaFilter.CleanUp(seqdat,outfile,PARAMS)
-    P.run()
+    seqdat = PipelineAssembly.SequencingData(infile)
+    statement = PipelineFilter.CleanUp(seqdat,outfile,PARAMS)
+    P.run(statement)
     
     
 @follows(cleanUp)
@@ -248,7 +231,7 @@ def full():
 def summariseCounts(infile,outfile):
     filtercounts = open(outfile,'w',1)
     filtercounts.write("File\tInput\tPost_rRNA_Filtering\tPost_Genome_Filtering\n")
-    filtercounts.write(PipelineMetaFilter.CountReads(infile,PARAMS))
+    filtercounts.write(PipelineFilter.CountReads(infile,PARAMS))
     filtercounts.close()
     
 #combine these into one file
@@ -267,7 +250,7 @@ def mergeSummaries(infiles, outfile):
 def build_report():
     scriptloc = "/".join(os.path.dirname(sys.argv[0]).split("/")[0:-1])+"/scripts/filter_report.Rmd"
     statement = 'R -e "rmarkdown::render(\'{}\',output_file=\'{}/report.dir/filter_report.html\')" --args {}/report.dir/combined.filtersummary.txt'.format(scriptloc,os.getcwd(),os.getcwd())
-    P.run()
+    P.run(statement)
     
 
 if __name__ == "__main__":
