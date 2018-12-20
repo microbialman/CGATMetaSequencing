@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 import re
 
-#get the orfs, function and taxonomy annotations from commadn line
+#get the orfs, function and taxonomy annotations from command line
 parser = ArgumentParser()
 parser.add_argument("--orfs", dest="orfs", help="fasta containing ORF sequences from prodigal")
 parser.add_argument("--functions", dest="funs", help="eggnog-mapper output functions")

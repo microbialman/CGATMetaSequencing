@@ -1,0 +1,98 @@
+################################################################
+#
+# Pipeline pipeline_metaenumerate.py configuration file
+#
+################################################################
+
+################################################################
+#
+# General options
+#
+################################################################
+General:
+  contig_dir: "/gfs/devel/majackson/Pipelines/MetaSequencing/testfiles/Assemble/contigs.dir/metaspades"
+  gtf_dir: "/gfs/devel/majackson/Pipelines/MetaSequencing/testfiles/Annotate/combined_annotations.dir"
+  feature_list: "domain,phylum,class,order,family,genus,species,GO_terms,KEGG_KO,BiGG_Reactions,Matching_OGs,COG_functional_categories"
+
+
+################################################################
+#
+# Bowtie options
+#
+################################################################
+BowtieDB:
+  memory: "1"
+  threads: "10"
+  seed: "4"
+
+Bowtie:
+  phred_type: "33"
+#alignment mode (end-to-end or local) (NOTE: CHANGE MA & SCORE_MIN ALSO)
+  mode: "end-to-end"
+#preset settings (use this to input one of bowties presets as appropriate for the alignment mode e.g. very-fast)
+#this overrides the manual settings below if not false
+  preset: "false"
+  n: "0"
+  l: "22"
+  i: "S,1,1.15"
+  n_ceil: "L,0,0.15"
+  dpad: "15"
+  gbar: "4"
+  ignore_quals: "false"
+  nofw: "false"
+  norc: "false"
+  no_1mm_upfront: "false"
+  ma: "0"
+  mp: "6"
+  np: "1"
+  rdg: "5,3"
+  rfg: "5,3"
+  score_min: "L,-0.6,-0.6"
+  #reporting mode default = best, k <int>  =  number of alns, a: "all"
+  reporting: "default"
+  d: "15"
+  r: "2"
+  minins: "0"
+  maxins: "500"
+  no_mixed: "false"
+  no_discordant: "false"
+  no_dovetail: "false"
+  no_contain: "false"
+  no_overlap: "false"
+  threads: "10"
+  memory: "1"
+
+################################################################
+#
+# FeatureCounts Options
+#
+################################################################
+featureCounts:
+#number of chunks to divide GTF file (set as 1 for no chunking, can increase speed for very large GTFs)
+  chunk: "2"
+  f: "GTF"
+  t: "ORF"
+  o: "true"
+  minoverlap: "1"
+  fracoverlap: "0"
+  fracoverlapfeature: "0"
+  largestoverlap: "false"
+  readextension5: "false"
+  readextension3: "false"
+  read2pos: "false"
+  m: "true"
+  fraction: "false"
+  s: "0"
+  p: "true"
+  b: "false"
+  c: "false"
+  threads: "20"
+  memory: "3"
+  v: "false"
+  tmp: "/gfs/scratch/"
+  threads_otherfeats: "15"
+  memory_otherfeats: "1"
+
+report:
+  memory: "10"
+

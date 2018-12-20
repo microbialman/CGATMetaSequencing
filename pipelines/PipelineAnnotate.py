@@ -4,7 +4,7 @@ classes and utility functions for pipeline_metaannotate.py
 '''
 
 import os
-import PipelineMetaAssemblyKit
+import PipelineAssembly
 
 '''
 function to build call to Prodigal
@@ -95,7 +95,6 @@ def runEggmapSeed(infile,outfile,params):
             pcall.append("--usemem")
     pcall.append("--cpu {}".format(params["Eggnogmapper_threads"]))
     return(" ".join(pcall))
-
 
 '''
 Function to build call to diamond
@@ -190,3 +189,4 @@ def runBlast2Lca(infile,outfile,params):
     bcall.append("-fwa {}".format(params["Blast2lca_fwa"]))
     bcall.append("-v {}".format(params["Blast2lca_v"]))
     return(" ".join(bcall))
+

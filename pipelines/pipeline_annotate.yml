@@ -1,0 +1,143 @@
+#################################################################
+# Configuration file for pipeline_annotate.py
+#################################################################
+
+################################################################
+#
+# Prodigal options
+#
+################################################################
+
+Prodigal:
+  c: "false"
+  d: "false"
+  f: "gbk"
+  g: "11"
+  m: "false"
+  n: "false"
+  p: "meta"
+  q: "false"
+  s: "false"
+  t: "false"
+  memory: "10"
+  threads: "2"
+
+
+######################################################################
+#
+# eggnog-mapper options (Note, run in two stages for parallelisation)
+#
+######################################################################
+
+Eggnogmapper:
+#number of ORFs per chunk
+  chunksize: "1000000"
+#paths to exectuable and database files
+  eggpath: "/gfs/apps/bio/eggnog-mapper-1.0.3/emapper.py"
+  eggdata: "/gfs/mirror/eggnog-mapper/"
+  method: "diamond"
+  tax_scope: "auto"
+  target_orthologs: "all"
+  go_evidence: "non-electronic"
+  hmmdb: "bact"
+  dbtype: "hmmdb"
+  qtype: "seq"
+  hmm_maxhits: "1"
+  hmm_evalue: "0.001"
+  hmm_score: "20"
+  hmm_maxseqlen: "5000"
+  hmm_qcov: "false"
+  z: "40000000"
+#diamond database path (false= use emapper default)
+  dmnd_db: "false"
+#what scoring matrix for alignments false = diamond defaults)
+  matrix: "false"
+#gap open penalty (false = defaults)
+  gapopen: "false"
+#gap extend penalty (false = defaults)
+  gapextend: "false"
+  seed_ortholog_evalue: "0.001"
+  seed_ortholog_score: "60"
+  override: "false"
+  no_refine: "false"
+  no_search: "false"
+  keep_mapping_files: "false"
+  translate: "false"
+  usemem: "true"
+  memory: "1"
+  threads: "20"
+  memory_annot: "2"
+  threads_annot: "24"
+
+################################################################
+#
+# DIAMOND options
+#
+################################################################
+
+Diamond:
+  memory: "10"
+  threads: "10"
+  command: "blastp"
+  db: "/gfs/mirror/diamond/diamond-0.9.22/May2018/nr.dmnd"
+  outfmt: "daa"
+  verbose: "false"
+  debug: "false"
+  quiet: "false"
+  #alignment options (false: "defaults)"
+  strand: "false"
+  max_target_seqs: "false"
+  top: "false"
+  range_culling: "false"
+  evalue: "0.001"
+  min_score: "false"
+  id: "false"
+  query_cover: "false"
+  subject_cover: "false"
+  sensitive: "false"
+  more_sensitive: "false"
+  block_size: "false"
+  index_chunks: "false"
+  gapopen: "false"
+  gapextend: "false"
+  frameshift: "false"
+  matrix: "false"
+  comp_based_stats: "false"
+  masking: "false"
+  no_self_hits: "false"
+  taxonmap: "false"
+  taxonnodes: "false"
+  taxonlist: "false"
+
+################################################################
+#
+# blast2lca options
+#
+################################################################
+
+Blast2lca:
+  memory: "5"
+  threads: "10"
+  informat: "Unknown"
+  sr: "true"
+  oro: "true"
+  tid: "false"
+  ms: "50"
+  me: "0.01"
+  top: "10"
+  mid: "0"
+  tn: "true"
+  a2t: "/gfs/mirror/megan6/May2018/prot_acc2tax-Mar2018X1.abin"
+
+#KEGG options, unused unless using MEGAN Ultimate Edition
+  k: "false"
+  kr: "4"
+  ktp: "true"
+  a2kegg: "/gfs/mirror/megan6/May2018/acc2kegg-Dec2017X1-ue.abin"
+  fwa: "true"
+  v: "false"
+
+#Annotation combining options
+Merge:
+  memory: "50"
+

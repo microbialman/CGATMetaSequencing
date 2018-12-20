@@ -181,7 +181,7 @@ def mapBowtie2(infile,outfile):
     job_threads = int(PARAMS["Bowtie_threads"])
     job_memory = str(PARAMS["Bowtie_memory"])+"G"
     seqdat = PipelineAssembly.SequencingData(infile)
-    bowtie = PipelineFilter.Bowtie2(seqdat,outfile,PARAMS)
+    bowtie = PipelineFilter.Bowtie2(seqdat,outfile,PARAMS,PARAMS["Bowtie_genome_db"])
     statementlist = []
     #remove all comments from read names in files (trimming can add comments making non-matching readnames in pairs)
     statementlist.append(bowtie.cleanNames())

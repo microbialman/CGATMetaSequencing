@@ -4,8 +4,6 @@ Metagenome annotation pipeline
 =============================
 
 :Author: Matt Jackson
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Takes contigs from assembled metagenomic data, identfies ORFs and carrys out functional and taxonomic annotation.
@@ -13,18 +11,20 @@ Takes contigs from assembled metagenomic data, identfies ORFs and carrys out fun
 Overview
 ========
 
+This pipeline uses Prodigal to detect ORFs in metagenomic assemblies.
+Eggnog mapper is then used to assign functional annotations to each ORF and MMSeqs2 to assign taxonomy using a lowest-common ancestor approach using the NCBI database. 
 
   
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+See cgat.org for general
 information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.yml` file. 
 
 
 Input
@@ -56,30 +56,20 @@ Interleaved files should be detected automatically.
 Files containg 1 in the suffix will be assumed paired end and should be in the same 
 directory as the read 2 files, which share the same file name except for the read number.
 
-.. note::
-
-   Quality scores need to be of the same scale for all input files. Thus it might be
-   difficult to mix different formats.
-
-Optional inputs
-+++++++++++++++
-
 Requirements
 ------------
 
-On top of the default CGAT setup and the MetaAssemblyKit pipeline, the pipeline requires the following
+On top of the default CGAT setup and the MetaSequencing pipeline, annotation requires the following
 software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
-|*Program*           |*Version*          |*Purpose*                                       |
+|*Program*           |*Tested Version*   |*Purpose*                                       |
 +--------------------+-------------------+------------------------------------------------+
 | Prodigal           | 2.6.3             | Detect ORFs                                    |
 +--------------------+-------------------+------------------------------------------------+
 | eggnog-mapper      | 1.0.3             | Functional annotation of ORFs                  |  
 +--------------------+-------------------+------------------------------------------------+
-| DIAMOND            | 0.9.22            | Alignment of ORFs to NCBI database             |
-+--------------------+-------------------+------------------------------------------------+
-| MEGAN CE           | 6.11.6            | Taxonomic annotation from DIAMOND alignments   |
+| MMseqs2            | 2018-12-14        | Taxonomic asignment of  ORFs vs NCBI database  |
 +--------------------+-------------------+------------------------------------------------+
 
 Also requires suitable reference databases indexed with the appropriate software versions.
@@ -111,17 +101,15 @@ import subprocess
 # Pipeline configuration
 ###################################################
 # load options from the config file
-import CGATPipelines.Pipeline as P
-P.getParameters(
-       ["%s.ini" % __file__[:-len(".py")],
-       "../pipeline.ini",
-       "pipeline.ini" ] )
+import cgatcore.pipeline as P
+P.get_parameters(
+       ["%s.yml" % __file__[:-len(".py")],
+       "../pipeline.yml",
+       "pipeline.yml" ] )
 PARAMS = P.PARAMS
 
-#add PipelineMetaAssemblyKit
-import PipelineMetaAssemblyKit
-
-import PipelineMetaAnnotate
+import PipelineAssembly
+import PipelineAnnotate
 
 #get all files within the directory to process
 SEQUENCEFILES = ("*.fasta", "*.fasta.gz", "*.fasta.1.gz", "*.fasta.1",
@@ -142,9 +130,9 @@ def detectOrfs(infile,outfile):
     statementlist=[]
     #set job memory and threads
     job_memory = str(PARAMS["Prodigal_memory"])+"G"
-    job_threads = PARAMS["Prodigal_threads"]
+    job_threads = int(PARAMS["Prodigal_threads"])
     #command to generate index files
-    seqdat = PipelineMetaAssemblyKit.SequencingData(infile)
+    seqdat = PipelineAssembly.SequencingData(infile)
     #ensure input is FASTA
     if seqdat.paired == True:
         print("Prodigal requires single/merged (i.e. not paired-end) reads for ORF detection.")
@@ -153,12 +141,12 @@ def detectOrfs(infile,outfile):
             statementlist.append("reformat.sh in={} out={}".format(infile,"orfs.dir/"+seqdat.cleanname+".fa"))
             infile = "orfs.dir/"+seqdat.cleanname+".fa"
         #generate the call to prodigal
-        statementlist.append(PipelineMetaAnnotate.runProdigal(infile,outfile,PARAMS))
+        statementlist.append(PipelineAnnotate.runProdigal(infile,outfile,PARAMS))
         #remove the temp FASTA if created
         if seqdat.fileformat == "fastq":
             statementlist.append("rm {}".format("orfs.dir/"+seqdat.cleanname+".fa"))
         statement = " && ".join(statementlist)
-        P.run()
+        P.run(statement)
 
 ######################################################################################################################
 # Find seed orthologs of ORFs using eggnog-mapper with chunk splitting
@@ -168,19 +156,19 @@ def detectOrfs(infile,outfile):
 @follows(mkdir("functional_annotations.dir/emapper_chunks"))
 @subdivide(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides"),r"functional_annotations.dir/emapper_chunks/\1.*.chunk",r"functional_annotations.dir/emapper_chunks/\1")
 def splitFasta(infile,outfiles,outfileroot):
-    statement = "python {}/fasta_to_chunks.py --input {} --output_prefix {} --chunk_size {}".format(os.path.dirname(os.path.abspath(__file__)).replace("pipelines","scripts"),infile,os.getcwd()+"/"+outfileroot,PARAMS["Eggnogmapper_chunksize"])
-    P.run()
+    statement = "python {}/fastaToChunks.py --input {} --output_prefix {} --chunk_size {}".format(os.path.dirname(os.path.abspath(__file__)).replace("pipelines","scripts"),infile,os.getcwd()+"/"+outfileroot,PARAMS["Eggnogmapper_chunksize"])
+    P.run(statement)
 
 @follows(splitFasta)
 @transform(splitFasta,regex(r"functional_annotations.dir/emapper_chunks/(\S+).chunk"),r"functional_annotations.dir/emapper_chunks/\1.chunk.emapper.seed_orthologs")
 def functionalAnnotSeed(infile,outfile):
     job_memory = str(PARAMS["Eggnogmapper_memory"])+"G"
-    job_threads = PARAMS["Eggnogmapper_threads"]
+    job_threads = int(PARAMS["Eggnogmapper_threads"])
     #generate call to eggnog-mapper
     #requires older version of diamond to use the eggnog mapper databases
     statement = "module load bio/diamond/0.8.22 && "
-    statement += PipelineMetaAnnotate.runEggmapSeed(infile,infile,PARAMS)
-    P.run()
+    statement += PipelineAnnotate.runEggmapSeed(infile,infile,PARAMS)
+    P.run(statement)
 
 ###############################################################
 # Functional annotation of the seeds
@@ -189,11 +177,11 @@ def functionalAnnotSeed(infile,outfile):
 @transform(functionalAnnotSeed,regex(r"functional_annotations.dir/emapper_chunks/(\S+).emapper.seed_orthologs"),r"functional_annotations.dir/emapper_chunks/\1.emapper.annotations")
 def functionalAnnotChunks(infile,outfile):
     job_memory = str(PARAMS["Eggnogmapper_memory_annot"])+"G"
-    job_threads = str(PARAMS["Eggnogmapper_threads_annot"])
+    job_threads = int(str(PARAMS["Eggnogmapper_threads_annot"]))
     #get annotation from seeds
-    statement = PipelineMetaAnnotate.runEggmapAnnot(infile,outfile.replace(".emapper.annotations",""),PARAMS)
+    statement = PipelineAnnotate.runEggmapAnnot(infile,outfile.replace(".emapper.annotations",""),PARAMS)
     #run the annotation step
-    P.run()
+    P.run(statement)
 
 ###################################################
 # Merge the functional annotations
@@ -202,7 +190,7 @@ def functionalAnnotChunks(infile,outfile):
 @collate(functionalAnnotChunks,regex(r"functional_annotations\.dir/emapper_chunks/(\S+)\.[0-9]+\.chunk\.emapper\.annotations"),r"functional_annotations.dir/\1.functional.annotations")
 def functionalAnnot(infiles,outfile):
     statement = "cat {} >> {}".format(" ".join(infiles),outfile)
-    P.run()
+    P.run(statement)
     
 ##################################################
 # Taxonomic alignment of ORFs using DIAMOND
@@ -213,10 +201,10 @@ def functionalAnnot(infiles,outfile):
 def taxonomicAlign(infile,outfile):
     #set memory and threads
     job_memory = str(PARAMS["Diamond_memory"])+"G"
-    job_threads = PARAMS["Diamond_threads"]
+    job_threads = int(PARAMS["Diamond_threads"])
     #generate call to diamond
-    statement = PipelineMetaAnnotate.runDiamond(infile,outfile,PARAMS)
-    P.run()
+    statement = PipelineAnnotate.runDiamond(infile,outfile,PARAMS)
+    P.run(statement)
 
 ########################################################################################################
 # Get taxanomic annotation (and optionally kegg functions) from DIAMOND alignment using MEGAN blast2lca
@@ -225,24 +213,27 @@ def taxonomicAlign(infile,outfile):
 @transform(taxonomicAlign,regex(r"taxonomic_annotations.dir/(\S+).daa"),r"taxonomic_annotations.dir/\1.taxonomic.annotations")
 def meganAnnot(infile,outfile):
     job_memory = str(PARAMS["Blast2lca_memory"])+"G"
-    job_threads = PARAMS["Blast2lca_threads"]
+    job_threads = int(PARAMS["Blast2lca_threads"])
     #generate call to blast2lca
-    statement = PipelineMetaAnnotate.runBlast2Lca(infile,outfile,PARAMS)
-    P.run()
+    statement = PipelineAnnotate.runBlast2Lca(infile,outfile,PARAMS)
+    P.run(statement)
 
 
 ################################################
 # Generate GTF summarising ORFs and annotations
 ################################################
 @follows(meganAnnot)
-@follows(mkdir("annotated_orfs.dir"))
-@merge([detectOrfs,functionalAnnot,meganAnnot],"annotated_orfs.dir/combined_orf_annotations.gtf")
-def mergeAnnotations(infiles,outfile):
+@follows(mkdir("combined_annotations.dir"))
+@transform(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides"),r"combined_annotations.dir/\1.orf_annotations.gtf")
+def mergeAnnotations(infile,outfile):
+    sampleName=re.search("orfs.dir/(\S+).orf_peptides",infile).group(1)
+    func="functional_annotations.dir/{}.functional.annotations".format(sampleName)
+    tax="taxonomic_annotations.dir/{}.taxonomic.annotations".format(sampleName)
     job_memory = str(PARAMS["Merge_memory"])+"G"
     statement = "python {}scripts/makeGtf.py --orfs {} --functions {} --taxonomy {} --output {} --output-short {}".format(
-        os.path.dirname(__file__).rstrip("pipelines"), infiles[0], infiles[1], infiles[2], outfile, outfile.replace(".gtf","_short.gtf")
+        os.path.dirname(__file__).rstrip("pipelines"), infile, func, tax, outfile, outfile.replace(".gtf","_short.gtf")
     )
-    P.run()
+    P.run(statement)
 
 @follows(mergeAnnotations)
 def full():
@@ -254,17 +245,18 @@ def full():
 ###################################################
 @follows(mkdir("report.dir"))
 @originate("report.dir/gtf_summary.tsv")
-def summariseGTF(outfile):
+def summariseGTFs(outfile):
     job_memory = str(PARAMS["Merge_memory"])+"G"
-    statement = "python {}scripts/annotationSummaryTable.py --gtf {} --output {}".format(os.path.dirname(__file__).rstrip("pipelines"),"annotated_orfs.dir/combined_orf_annotations.gtf",outfile)
-    P.run()
+    statement = "python {}scripts/annotationSummaryTable.py --gtf-dir combined_annotations.dir --annot-output {} --orf-output {}".format(
+        os.path.dirname(__file__).rstrip("pipelines"),outfile,"report.dir/orf_summary.tsv")
+    P.run(statement)
 
-@follows(summariseGTF)
+@follows(summariseGTFs)
 def build_report():
     job_memory = str(PARAMS["Merge_memory"])+"G"
     scriptloc = "/".join(os.path.dirname(sys.argv[0]).split("/")[0:-1])+"/scripts/annotation_report.Rmd"
-    statement = 'R -e "rmarkdown::render(\'{}\',output_file=\'{}/report.dir/annotation_report.html\')" --args {}/report.dir/gtf_summary.tsv'.format(scriptloc,os.getcwd(),os.getcwd())
-    P.run()
+    statement = 'R -e "rmarkdown::render(\'{}\',output_file=\'{}/report.dir/annotation_report.html\')" --args {}/report.dir/gtf_summary.tsv {}/report.dir/orf_summary.tsv'.format(scriptloc,os.getcwd(),os.getcwd(),os.getcwd())
+    P.run(statement)
 
 
     

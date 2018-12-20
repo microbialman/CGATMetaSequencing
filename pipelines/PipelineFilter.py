@@ -123,9 +123,10 @@ class SortMeRNA:
 Class to call bowtie2 mapping command
 '''
 class Bowtie2:
-    def __init__(self,seqdat,outfile,params):
+    def __init__(self,seqdat,outfile,params,db):
         
         self.seqdat = seqdat
+        self.db = db
         self.outfile = outfile
         self.indir = os.path.dirname(self.seqdat.filepath)+"/"
         self.outdir = os.path.dirname(outfile)
@@ -149,7 +150,7 @@ class Bowtie2:
     #main call to bowtie implements most arguments    
     def build(self):
         statementlist = ["bowtie2"]
-        statementlist.append("-x {}".format(self.params["Bowtie_genome_db"]))
+        statementlist.append("-x {}".format(self.db))
         if self.seqdat.paired == False:
             statementlist.append("-U {}".format(self.seqdat.filepath))
         elif self.seqdat.interleaved == True:
