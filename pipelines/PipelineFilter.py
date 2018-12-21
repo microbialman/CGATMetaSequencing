@@ -290,7 +290,7 @@ def CountReads(infile,params):
         rrna = PipelineAssembly.SequencingData(rnadir+original.cleanname+"/other_"+original.filename)
         rrna.readCount()
     if params["General_host_filter"] == "true":
-        genome = PipelineAssembly.SequencingData(gendir+original.cleanname+"/hostfiltered_"+original.filename)
+        genome = PipelineAssembly.SequencingData(gendir+original.cleanname+"/hostfiltered_"+original.filenamew)
         genome.readCount()
     ocount=original.readcount
     if rrna == False:

@@ -49,7 +49,7 @@ Bowtie:
   rfg: "5,3"
   score_min: "L,-0.6,-0.6"
   #reporting mode default = best, k <int>  =  number of alns, a: "all"
-  reporting: "default"
+  reporting: "k 1"
   d: "15"
   r: "2"
   minins: "0"
@@ -83,6 +83,7 @@ featureCounts:
   m: "true"
   fraction: "false"
   s: "0"
+#set p true to count fragments instead of reads
   p: "true"
   b: "false"
   c: "false"

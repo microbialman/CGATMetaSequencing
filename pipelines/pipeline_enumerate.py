@@ -87,6 +87,7 @@ Code
 """
 #load modules
 from ruffus import *
+from ruffus.combinatorics import *
 import os, re
 import sys, glob
 import subprocess
@@ -104,6 +105,8 @@ P.get_parameters(
        "../pipeline.yml",
        "pipeline.yml" ] )
 PARAMS = P.PARAMS
+
+FEATURES = P.as_list(PARAMS.get("General_feature_list",""))
 
 import PipelineAssembly
 import PipelineEnumerate
@@ -163,89 +166,50 @@ def mapSamples(infile,outfile):
     statementlist.append("rm {}".format(outfile.replace(".bam",".sam")))
     statement = " && ".join(statementlist)
     P.run(statement)
-'''
-#################################################################
-# Chunk the GTF
-#################################################################
-@follows(mapSamples)
-@follows(mkdir("chunk_gtf.dir"))
-@split(PARAMS["General_gtf_file"],"chunk_gtf.dir/*.gtf")
-def chunkGTF(infile,outfiles):
-    statement = 'split -n {} {} {} && for f in chunk_gtf.dir/*; do mv "$f" "$f.gtf"; done'.format(PARAMS["featureCounts_chunk"],infile,"chunk_gtf.dir/chunk_")
-    P.run(statement)
 
-#################################################################
-# Count reads mapping to each ORF using featureCounts
-#################################################################
-@follows(chunkGTF)
-@follows(mkdir("chunk_counts.dir"))
-@transform(chunkGTF,regex(r"chunk_gtf.dir/(\S+).gtf"),r"chunk_counts.dir/\1.tsv")
+    
+########################################################################
+# Count reads mapping to each ORF using featureCounts and GTF files
+########################################################################
+@follows(mkdir("orf_counts.dir"))
+@follows(mapSamples)
+@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"orf_counts.dir/\1.tsv")
 def countOrfs(infile,outfile):
     feat = "gene_id"
-    samplemappings = [x for x in glob.iglob('sample_mappings.dir/**/*.bam', recursive=True)]
-    #get pairdness from first sample
+    filename=re.match(r"(\S+).(fasta$|fasta.gz|fasta.1.gz|fasta.1|fna$|fna.gz|fna.1.gz|fna.1|fa$|fa.gz|fa.1.gz|fa.1|fastq$|fastq.gz|fastq.1.gz|fastq.1)",infile).group(1)
+    filemap=PipelineEnumerate.enumerateMapper(filename,PARAMS)
+    mapping="sample_mappings.dir/{}/{}.mapped.bam".format(filemap.samplename,filemap.samplename)
+    #get pairedness
     paired = True
-    num_paired = subprocess.check_output(["samtools","view","-c","-f 1","{}".format(os.getcwd()+"/"+samplemappings[0])]).decode(sys.stdout.encoding)
+    num_paired = subprocess.check_output(["samtools","view","-c","-f 1","{}".format(mapping)]).decode(sys.stdout.encoding)
     if int(num_paired.strip("\n")) == 0:
         paired = False
     #generate counts per orf across all samples
     job_threads = int(PARAMS["featureCounts_threads"])
     job_memory = str(PARAMS["featureCounts_memory"])+"G"
-    statement = PipelineEnumerate.countFeatures(feat,infile,paired,outfile,samplemappings,PARAMS)
+    statement = PipelineEnumerate.countFeatures(feat,filemap.shortgtfpath,paired,outfile,mapping,PARAMS)
     P.run(statement)
 
-################################################################
-# Combine chunk counts
-################################################################
+############################################################
+# Counting taxa and function features from gene_id counts
+############################################################
 @follows(countOrfs)
-@follows(mkdir("feature_counts.dir"))
-@merge(countOrfs,"feature_counts.dir/gene_id_counts.txt")
-def mergeCounts(infiles,outfile):
-    statement="head -1 {} >> {} && awk 'FNR>1' {} >> {}".format(infiles[0],outfile," ".join(infiles),outfile)
-    P.run(statement)
-
-################################################################
-# Generate formatted ORF counts
-################################################################
-@follows(countOrfs)
-@follows(mkdir("formatted_counts.dir"))
-@split(mergeCounts,["formatted_counts.dir/raw_counts/gene_id_raw.tsv","formatted_counts.dir/tpm_counts/gene_id_tpm.tsv"])
-def tpmOrfs(infile,outfiles):
-    job_memory = str(PARAMS["normalise_memory"])+"G"
-    job_threads = int(PARAMS["normalise_threads"])
-    statement = "Rscript {}scripts/tpmCounts.R {} {} {}".format(os.path.dirname(__file__).rstrip("pipelines"),infile[0],outfiles[0],outfiles[1])
-    P.run(statement)
-
-#########################################################
-# Do counting for other features from gene_id counts
-#########################################################
-@follows(tpmOrfs)
-@originate(["formatted_counts.dir/raw_counts/{}_raw.tsv".format(x) for x in PARAMS["General_feature_list"].split(",")])
-def countRawFeatures(outfile):
-    feat = re.search("formatted_counts.dir/raw_counts/(\S+)_raw.tsv",outfile).group(1)
-    #generate counts for other features from ORF counts
+@follows(mkdir("annotation_counts.dir"))
+@follows(mkdir("annotation_counts.dir/logs"))
+@mkdir(FEATURES,regex(r"(\S+)"),r"annotation_counts.dir/\1")
+@transform(countOrfs,regex(r"orf_counts.dir/(\S+).tsv"),r"annotation_counts.dir/logs/\1.log")
+def countFeatures(infile,outfile):
+    filename=re.search("orf_counts.dir/(\S+).tsv",infile).group(1)
+    filemap=PipelineEnumerate.enumerateMapper(filename,PARAMS)
+    #generate counts for other features from ORF counts and full GTF
     job_threads = int(PARAMS["featureCounts_threads_otherfeats"])
     job_memory = str(PARAMS["featureCounts_memory_otherfeats"])+"G"
-    statement = "python {}scripts/countFeat.py --orfinput {} --feature {} --gtf {} --output {}".format(os.path.dirname(__file__).rstrip("pipelines"),
-                                                                                                                      "formatted_counts.dir/raw_counts/gene_id_raw.tsv",
-                                                                                                                      feat,
-                                                                                                                      PARAMS["General_gtf_file_full"],
-                                                                                                                      outfile)
+    statement = "python {}scripts/countFeat.py --orf_counts {} --features {} --gtf {} --outdir annotation_counts.dir/ --logfile {}".format(
+        os.path.dirname(__file__).rstrip("pipelines"),infile,",".join(FEATURES),filemap.gtfpath,outfile)
     P.run(statement)
 
 
-#######################################
-# Move out log files
-######################################
-@follows(countRawFeatures)
-@follows(countTpmFeatures)
-@follows(mkdir("count_logs.dir"))
-@originate(["count_logs.dir/gtflog_{}_raw.tsv".format(x) for x in PARAMS["General_feature_list"].split(",")])
-def moveLogs():
-    statement="mv -f formatted_counts.dir/*/gtflog* count_logs.dir/"
-    P.run(statement)
-
-@follows(moveLogs)
+@follows(countFeatures)
 def full():
     pass
 
@@ -256,7 +220,7 @@ def build_report():
     scriptloc = "/".join(os.path.dirname(sys.argv[0]).split("/")[0:-1])+"/scripts/enumeration_report.Rmd"
     statement = 'R -e "rmarkdown::render(\'{}\',output_file=\'{}/report.dir/enumeration_report.html\')" --args {} {} {}'.format(scriptloc,os.getcwd(),PARAMS["report_readcounts"],os.getcwd()+"/formatted_counts.dir/raw_counts/gene_id_raw.tsv",os.getcwd()+"/formatted_counts.dir/raw_counts")
     P.run(statement)
-'''
+
 if __name__ == "__main__":
     if sys.argv[1] == "plot":
         pipeline_printout_graph("test.pdf", "pdf", [full], no_key_legend=True,
