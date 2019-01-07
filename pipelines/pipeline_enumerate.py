@@ -208,12 +208,22 @@ def countFeatures(infile,outfile):
         os.path.dirname(__file__).rstrip("pipelines"),infile,",".join(FEATURES),filemap.gtfpath,outfile)
     P.run(statement)
 
-
+###########################################################
+# Pool the counts from all the samples into combined files
+###########################################################
 @follows(countFeatures)
+@follows(mkdir("combined_counts.dir"))
+@originate(["combined_counts.dir/{}_combined_counts.tsv".format(x) for x in FEATURES])
+def combineCounts(outfile):
+    feat = re.search("combined_counts.dir/(\S+)_combined_counts.tsv",outfile).group(1)
+    statement = "python {}scripts/combineCounts.py --feature {} --countdir {} --outfile {}".format(os.path.dirname(__file__).rstrip("pipelines"),feat,"annotation_counts.dir",outfile)
+    P.run(statement)
+    
+@follows(combineCounts)
 def full():
     pass
 
-
+#MAKE REPORT
 @follows(mkdir("report.dir"))
 def build_report():
     job_memory = str(PARAMS["report_memory"])+"G"
