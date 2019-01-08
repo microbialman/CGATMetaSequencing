@@ -53,7 +53,8 @@ Reports are output to *report.dir*.
 Below is an example of commands that could be used for a complete MetaSequncing run. This assumes starting from paried-end FASTQ reads that have undergone prior QC (trimming and quality filtering) and have the naming system *SampleName.fastq.1.gz and SampleName.fastq.2.gz*.
 
 <br>
-```
+```sh
+
 #make a folder and symlink the starting reads
 
 mkdir Filter
@@ -86,6 +87,7 @@ python MetaSequencing/pipelines/pipeline_enumerate.py make full
 python MetaSequencing/pipelines/pipeline_enumerate.py make build_report
 
 #Experiment-wide pooled annotation counts can then be found in Enumerate/combined_counts.dir
+
 ```
 
 
