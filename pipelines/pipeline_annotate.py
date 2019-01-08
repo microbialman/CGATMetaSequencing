@@ -69,7 +69,9 @@ software to be in the path:
 +--------------------+-------------------+------------------------------------------------+
 | eggnog-mapper      | 1.0.3             | Functional annotation of ORFs                  |  
 +--------------------+-------------------+------------------------------------------------+
-| MMseqs2            | 2018-12-14        | Taxonomic asignment of  ORFs vs NCBI database  |
+| Diamond            | 0.9.22            | Alignment of ORFs vs NCBI database             |
++--------------------+-------------------+------------------------------------------------+
+| MEGAN CE           | 6.11.6            | Taxonomic assignment from Diamond alignments   |
 +--------------------+-------------------+------------------------------------------------+
 
 Also requires suitable reference databases indexed with the appropriate software versions.
