@@ -1,5 +1,5 @@
 ---
-title: "Metagenomic ORF and Feature Counting"
+title: "Metagenomic Feature Counts"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -8,78 +8,63 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(cache = FALSE)
 options(scipen=999)
-cpal=4
 
-library(data.table)
-
-#read in the sample read counts
-readcounts=fread(commandArgs(trailingOnly=T)[1],header = T,sep="\t")
-readcounts=data.frame(readcounts)
-#read in the orf mapping counts
-orfcounts=fread(commandArgs(trailingOnly=T)[2],header=T,sep="\t",)
-orfcounts=data.frame(orfcounts,check.names = F)
-
-#match the orders
-mappings=c()
-for(i in readcounts$File){
-  mappings=c(mappings,grep(i,colnames(orfcounts)[2:ncol(orfcounts)]))
-}
-readcounts=readcounts[order(mappings),]
-
-filtreads=readcounts[,ncol(readcounts)]
-orftots=colSums(orfcounts[,2:ncol(orfcounts)])
-percents=(orftots/filtreads)*100
-names(percents)=readcounts$File
-```
-
-## Read Mapping
-
-**`r round(mean(filtreads))` $\pm$ `r round(sd(filtreads))`** (Mean$\pm$SD) reads were mapped across **`r nrow(orfcounts)`** ORFs.
-
-**`r round(mean(percents))` $\pm$ `r round(sd(percents))`** % of reads were mapped per sample (Mean$\pm$SD).
-
-```{r, echo=FALSE,message=FALSE,error=FALSE,warning=FALSE}
 library(ggplot2)
-library(cowplot)
-percents=data.frame(Sample=names(percents),Percent=percents)
-percents=percents[order(percents$Percent,decreasing = F),]
-percents$Sample = factor(percents$Sample,levels=as.character(percents$Sample))
-perplot=ggplot(percents,aes(x=Sample,y=Percent,fill=1))+geom_bar(stat="identity")+coord_flip()+guides(fill=F)+ylab("% Reads Mapped")+
-  theme(axis.text.y = element_text(size=8))
-plot(perplot)
-```
-
-## ORF Distribution
-
-```{r , echo=FALSE}
-uniquespersamp=colSums(orfcounts[,2:ncol(orfcounts)]!=0)
-orfobs=rowSums(orfcounts[,2:ncol(orfcounts)])
-```
-
-Each sample contained a mean of **`r round(mean(uniquespersamp))` $\pm$ `r round(sd(uniquespersamp))`** unique ORFs (Mean$\pm$SD).
-
-Each ORF was observed a mean of **`r round(mean(orfobs))` $\pm$ `r round(sd(orfobs))`** times across all samples (Mean$\pm$SD).
-
-```{r echo=FALSE,message=FALSE,error=FALSE,warning=FALSE}
-orfhist=qplot(orfobs,geom="histogram",fill=2)+scale_y_log10()+guides(fill=F)+ylab("log10(No. ORFs)")+xlab("Tot. No. Observations")
-plot(orfhist)
-```
-
-## Features Counted
-
-```{r echo=FALSE}
+library(reshape2)
 library(stringr)
-library(knitr)
+library(cowplot)
 
-dirstr=as.character(commandArgs(trailingOnly = T)[3])
-f=list.files(dirstr)
-feat=str_match(f,"(\\S+)_raw.tsv")
-feat=feat[,2]
+features=commandArgs(trailingOnly=T)[1]
+features=strsplit(features,",")[[1]]
+
+dir=commandArgs(trailingOnly = T)[2]
+
+first=read.table(paste0(dir,"/",features[1],"_combined_counts.tsv"),header=T,row.names=1,sep="\t")
+
+featsum=function(feature,direct){
+   cat("# ",feature,"\n")
+   data=read.table(paste0(dir,"/",feature,"_combined_counts.tsv"),header=T,row.names=1,sep="\t")
+   cat("Identified **`",nrow(data),"`** unique ",feature," across all samples.\n\n")
+   #order samples alphabetically
+   data=data[,order(colnames(data))]
+   #plot the top 10 of each feature, particularly useful for taxa (or all if <10)
+   cat("Relative abundance plot for top ",feature," (mean abundance):\n\n")
+   abund=t(data/colSums(data))
+   means=colMeans(abund)
+   abund=abund[,order(means,decreasing = T)]
+   top=data.frame(abund)
+   colnames(top)=paste0("...",str_sub(colnames(top), start= -30))
+   if(ncol(top)>11){
+       top=top[,1:10]
+       top$Other=rowSums(abund[,11:ncol(abund)])
+   }
+   top$Sample=rownames(top)
+   melted=melt(top,id="Sample")
+   colnames(melted)=c("Sample","Feature","Abundance")
+   fplot=ggplot(melted,aes(Sample,Abundance,fill=Feature))+geom_bar(stat="identity")+
+     scale_fill_brewer(type = "div", palette=9)
+   plot(fplot)
+   cat("\n\n")
+   #pca of samples based on these features
+   cat("PCA of samples based on ",feature," abundances:\n\n")
+   pca=prcomp(abund)
+   pplot=qplot(pca$x[,1],pca$x[,2])+xlab("PC1")+ylab("PC2")+guides(color=F)
+   plot(pplot)
+   cat("\n\n")
+}
+
 ```
 
-A total of **`r length(f)`** features were counted across the ORFs.
+# Overview
 
+**`r length(features)`** features counted across **`r ncol(first)`** samples.
 
-`r knitr::kable(feat, col.names="Features Counted")`
+Features: *`r paste(features)`*
+
+```{r,results='asis',echo=FALSE, fig.width=10}
+for(i in features){
+  featsum(i,dir)
+}
+```
 
 

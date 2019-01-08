@@ -223,12 +223,12 @@ def combineCounts(outfile):
 def full():
     pass
 
-#MAKE REPORT
+#Make report
 @follows(mkdir("report.dir"))
 def build_report():
-    job_memory = str(PARAMS["report_memory"])+"G"
     scriptloc = "/".join(os.path.dirname(sys.argv[0]).split("/")[0:-1])+"/scripts/enumeration_report.Rmd"
-    statement = 'R -e "rmarkdown::render(\'{}\',output_file=\'{}/report.dir/enumeration_report.html\')" --args {} {} {}'.format(scriptloc,os.getcwd(),PARAMS["report_readcounts"],os.getcwd()+"/formatted_counts.dir/raw_counts/gene_id_raw.tsv",os.getcwd()+"/formatted_counts.dir/raw_counts")
+    statement = 'R -e "rmarkdown::render(\'{}\',output_file=\'{}/report.dir/enumeration_report.html\')" --args {} {}'.format(
+        scriptloc,os.getcwd(),",".join(FEATURES),os.getcwd()+"/combined_counts.dir")
     P.run(statement)
 
 if __name__ == "__main__":
