@@ -19,7 +19,7 @@ When running multiple stages, the output files of each step can be symlinked int
 
 Before running a pipeline it must be configured by specifying its parameters within the associated YAML file. Example *.yml* files can be found in the *pipelines* folder.
 
-For instance, settings for the *pipelines_filter.py* pipeline, such as skipping rRNA filtering, can be adjusted in the *pipelines_filter.yml* file. The *.yml* file should be copied into the working directory from which the pipeline will be run and should be named to match the pipeline being run.
+For instance, settings for the *pipelines_filter.py* pipeline, such as skipping rRNA filtering, can be adjusted in the *pipelines_filter.yml* file. The *.yml* file should be edited within the pipelines folder, or if using custom parameters for a single run, copied into the working directory from which the pipeline will be run where it should be named *pipeline.yml*.
 
 ### Running
 
@@ -56,33 +56,35 @@ Below is an example of commands that could be used for a complete MetaSequncing 
 ```sh
 
 #make a folder and symlink the starting reads
-
 mkdir Filter
 cd Filter
 ln -s path_to_reads/*.gz ./
+#copy the pipeline configuration file (this will also need to be edited to set parameters) 
+cp MetaSequencing/pipelines/pipeline_filter.yml ./pipeline.yml
 python MetaSequencing/pipelines/pipeline_filter.py make full
 python MetaSequencing/pipelines/pipeline_filter.py make build_report
 
 mkdir ../Assemble
 cd ../Assemble
 ln -s ../Filter/filtered_reads.dir/* ./
+cp MetaSequencing/pipelines/pipeline_assembly.yml ./pipeline.yml
 python MetaSequencing/pipelines/pipeline_assembly.py make full
 python MetaSequencing/pipelines/pipeline_assembly.py make build_report
 
-#can select contigs from any of the methods used
-
 mkdir ../Annotate
 cd ../Annotate
+#can select contigs from any of the assembly methods
 ln -s ../Assemble/contigs.dir/metaspades/* ./
+cp MetaSequencing/pipelines/pipeline_annotate.yml ./pipeline.yml
 python MetaSequencing/pipelines/pipeline_annotate.py make full
 python MetaSequencing/pipelines/pipeline_annotate.py make build_report
 
 #note in pipeline_enumerate the contig/annotation directory is passed to the pipeline in the yml file
 #we symlink the filtered reads from pipeline_filter to the working directory
-
 mkdir ../Enumerate
 cd ../Enumerate
 ln -s ../Filter/filtered_reads.dir/* ./
+cp MetaSequencing/pipelines/pipeline_enumerate.yml ./pipeline.yml
 python MetaSequencing/pipelines/pipeline_enumerate.py make full
 python MetaSequencing/pipelines/pipeline_enumerate.py make build_report
 
