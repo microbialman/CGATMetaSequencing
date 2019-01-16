@@ -43,7 +43,7 @@ SortMeRNA:
   r: "false"
   threads: "10"
   e: "1"
-  memory: "1"
+  memory: "5"
   v: "false"
 
 #bowtie settings
@@ -79,7 +79,7 @@ Bowtie:
   no_contain: "false"
   no_overlap: "false"
   threads: "10"
-  memory: "1"
+  memory: "2"
 
 #settings for extracting unmapped reads from mapping file
 #set the postive and negative flags for paired and unpaired data seperately

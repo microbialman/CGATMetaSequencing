@@ -13,6 +13,8 @@ library(ggplot2)
 library(reshape2)
 library(stringr)
 library(cowplot)
+library(vegan)
+library(ggrepel)
 
 features=commandArgs(trailingOnly=T)[1]
 features=strsplit(features,",")[[1]]
@@ -51,6 +53,26 @@ featsum=function(feature,direct){
    pplot=qplot(pca$x[,1],pca$x[,2])+xlab("PC1")+ylab("PC2")+guides(color=F)
    plot(pplot)
    cat("\n\n")
+   #rarefactin plot
+   cat(paste0("Rarefaction curves for counts assigned to ",feature,":"))
+   sampmax=colSums(data)
+   raredepths=round(c(seq(from=1,to=max(sampmax),by=(max(sampmax)-1)/20)))
+   vals=matrix(nrow=length(raredepths),ncol=ncol(data))
+   for(i in c(1:length(raredepths))){
+     depth=raredepths[i]
+     res=rarefy(t(data), depth)
+     res[sampmax<depth]=NA
+     vals[i,]=res
+   }
+   colnames(vals)=colnames(data)
+   rownames(vals)=raredepths
+   raremelt=melt(vals)
+   colnames(raremelt)=c("Depth","Sample","Richness")
+   raremelt=raremelt[!is.na(raremelt$Richness),]
+   labels=data.frame(Sample=colnames(data),Depth=sampmax,Rich=apply(vals,2,function(x){max(x,na.rm = T)}))
+   rplot=ggplot(raremelt,aes(x=Depth,y=Richness,color=Sample))+geom_line()+guides(color=F)+
+     geom_label_repel(data=labels,aes(x=Depth,y=Rich,label=Sample))
+   plot(rplot)
 }
 
 ```

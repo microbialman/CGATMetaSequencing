@@ -64,8 +64,8 @@ Eggnogmapper:
   keep_mapping_files: "false"
   translate: "false"
   usemem: "true"
-  memory: "1"
-  threads: "20"
+  memory: "20"
+  threads: "10"
   memory_annot: "2"
   threads_annot: "24"
 
