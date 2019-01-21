@@ -35,8 +35,8 @@ def runProdigal(infile,outfile,params):
 '''
 function to build call to eggnog-annotation
 '''
-def runEggmapAnnot(infile,outfile,params):
-    return("python2 {} --annotate_hits_table {} --no_file_comments -o {} --cpu {} --data_dir {}".format(params["Eggnogmapper_eggpath"],infile,outfile,params["Eggnogmapper_threads_annot"],params["Eggnogmapper_eggdata"]))
+def runEggmapAnnot(infile,outfile,params,scratch):
+    return("python2 {} --annotate_hits_table {} --no_file_comments -o {} --cpu {} --data_dir {}".format(params["Eggnogmapper_eggpath"],infile,outfile,params["Eggnogmapper_threads_annot"],scratch))
 
 
 '''

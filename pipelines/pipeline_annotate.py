@@ -180,8 +180,16 @@ def functionalAnnotSeed(infile,outfile):
 def functionalAnnotChunks(infile,outfile):
     job_memory = str(PARAMS["Eggnogmapper_memory_annot"])+"G"
     job_threads = int(str(PARAMS["Eggnogmapper_threads_annot"]))
+    statement=[]
+    if PARAMS["Eggnogmapper_scratch"] == "true":
+        #copy the db into fast local SSD
+        statement.append("cp {}eggnog.db $SCRATCH_DIR/eggnog.db".format(PARAMS["Eggnogmapper_eggdata"]))
+        datadir="$SCRATCH_DIR"
+    else:
+        datadir=PARAMS["Eggnogmapper_eggdata"]
     #get annotation from seeds
-    statement = PipelineAnnotate.runEggmapAnnot(infile,outfile.replace(".emapper.annotations",""),PARAMS)
+    statement.append(PipelineAnnotate.runEggmapAnnot(infile,outfile.replace(".emapper.annotations",""),PARAMS,datadir))
+    statement = " && ".join(statement)
     #run the annotation step
     P.run(statement)
 
