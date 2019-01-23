@@ -25,13 +25,13 @@ first=read.table(paste0(dir,"/",features[1],"_combined_counts.tsv"),header=T,row
 
 featsum=function(feature,direct){
    cat("# ",feature,"\n")
-   data=read.table(paste0(dir,"/",feature,"_combined_counts.tsv"),header=T,row.names=1,sep="\t")
+   data=read.table(paste0(dir,"/",feature,"_combined_counts.tsv"),header=T,row.names=1,sep="\t",comment.char = "",quote = "")
    cat("Identified **`",nrow(data),"`** unique ",feature," across all samples.\n\n")
    #order samples alphabetically
    data=data[,order(colnames(data))]
    #plot the top 10 of each feature, particularly useful for taxa (or all if <10)
    cat("Relative abundance plot for top ",feature," (mean abundance):\n\n")
-   abund=t(data/colSums(data))
+   abund=t(data)/colSums(data)
    means=colMeans(abund)
    abund=abund[,order(means,decreasing = T)]
    top=data.frame(abund)
@@ -44,19 +44,20 @@ featsum=function(feature,direct){
    melted=melt(top,id="Sample")
    colnames(melted)=c("Sample","Feature","Abundance")
    fplot=ggplot(melted,aes(Sample,Abundance,fill=Feature))+geom_bar(stat="identity")+
-     scale_fill_brewer(type = "div", palette=9)
+     scale_fill_brewer(type = "div", palette=9)+coord_flip()
    plot(fplot)
    cat("\n\n")
    #pca of samples based on these features
    cat("PCA of samples based on ",feature," abundances:\n\n")
    pca=prcomp(abund)
-   pplot=qplot(pca$x[,1],pca$x[,2])+xlab("PC1")+ylab("PC2")+guides(color=F)
+   pplot=qplot(pca$x[,1],pca$x[,2],color=as.factor(c(1:nrow(pca$x))))+xlab("PC1")+ylab("PC2")+guides(color=F)+
+     scale_color_manual(values=rainbow(nrow(pca$x)))
    plot(pplot)
    cat("\n\n")
    #rarefactin plot
    cat(paste0("Rarefaction curves for counts assigned to ",feature,":"))
    sampmax=colSums(data)
-   raredepths=round(c(seq(from=1,to=max(sampmax),by=(max(sampmax)-1)/20)))
+   raredepths=round(c(seq(from=1,to=max(sampmax),by=(max(sampmax)-1)/50)))
    vals=matrix(nrow=length(raredepths),ncol=ncol(data))
    for(i in c(1:length(raredepths))){
      depth=raredepths[i]
@@ -83,7 +84,7 @@ featsum=function(feature,direct){
 
 Features: *`r paste(features)`*
 
-```{r,results='asis',echo=FALSE, fig.width=10}
+```{r,results='asis',echo=FALSE, fig.width=10, warning=FALSE}
 for(i in features){
   featsum(i,dir)
 }
