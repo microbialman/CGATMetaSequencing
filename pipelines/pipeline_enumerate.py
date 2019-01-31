@@ -107,6 +107,9 @@ P.get_parameters(
 PARAMS = P.PARAMS
 
 FEATURES = P.as_list(PARAMS.get("General_feature_list",""))
+FEATUREPAIRS = P.as_list(PARAMS.get("General_feature_pairs"))
+FEATUREPAIRS = ["{}_BY_{}".format(x.split(":")[0],x.split(":")[1]) for x in FEATUREPAIRS]
+ALLFEATURES = FEATURES+FEATUREPAIRS
 
 import PipelineAssembly
 import PipelineEnumerate
@@ -205,20 +208,38 @@ def countFeatures(infile,outfile):
     job_threads = int(PARAMS["featureCounts_threads_otherfeats"])
     job_memory = str(PARAMS["featureCounts_memory_otherfeats"])+"G"
     statement = "python {}scripts/countFeat.py --orf_counts {} --features {} --gtf {} --outdir annotation_counts.dir/ --logfile {}".format(
-        os.path.dirname(__file__).rstrip("pipelines"),infile,",".join(FEATURES),filemap.gtfpath,outfile)
+        os.path.dirname(__file__).rstrip("pipelines"),infile,",".join(FEATUREPAIRS),filemap.gtfpath,outfile)
     P.run(statement)
 
+
+############################################################
+# Counting paired features from gene_id counts
+############################################################
+@follows(countFeatures)
+@mkdir(FEATUREPAIRS,regex(r"(\S+)"),r"annotation_counts.dir/\1")
+@transform(countOrfs,regex(r"orf_counts.dir/(\S+).tsv"),r"annotation_counts.dir/logs/\1_paired.log")
+def countPairedFeatures(infile,outfile):
+    filename=re.search("orf_counts.dir/(\S+).tsv",infile).group(1)
+    filemap=PipelineEnumerate.enumerateMapper(filename,PARAMS)
+    #generate counts for other features from ORF counts and full GTF
+    job_threads = int(PARAMS["featureCounts_threads_otherfeats"])
+    job_memory = str(PARAMS["featureCounts_memory_otherfeats"])+"G"
+    statement = "python {}scripts/countFeatPairs.py --orf_counts {} --feature_pairs {} --gtf {} --outdir annotation_counts.dir/ --logfile {}".format(
+        os.path.dirname(__file__).rstrip("pipelines"),infile,",".join(FEATUREPAIRS),filemap.gtfpath,outfile)
+    P.run(statement)
+    
+    
 ###########################################################
 # Pool the counts from all the samples into combined files
 ###########################################################
-@follows(countFeatures)
+@follows(countPairedFeatures)
 @follows(mkdir("combined_counts.dir"))
-@originate(["combined_counts.dir/{}_combined_counts.tsv".format(x) for x in FEATURES])
+@originate(["combined_counts.dir/{}_combined_counts.tsv".format(x) for x in ALLFEATURES])
 def combineCounts(outfile):
     feat = re.search("combined_counts.dir/(\S+)_combined_counts.tsv",outfile).group(1)
     statement = "python {}scripts/combineCounts.py --feature {} --countdir {} --outfile {}".format(os.path.dirname(__file__).rstrip("pipelines"),feat,"annotation_counts.dir",outfile)
     P.run(statement)
-    
+
 @follows(combineCounts)
 def full():
     pass

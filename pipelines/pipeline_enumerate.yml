@@ -12,8 +12,10 @@
 General:
   contig_dir: "/gfs/devel/majackson/Pipelines/MetaSequencing/testfiles/Assemble/contigs.dir/metaspades"
   gtf_dir: "/gfs/devel/majackson/Pipelines/MetaSequencing/testfiles/Annotate/combined_annotations.dir"
-  feature_list: "domain,phylum,class,order,family,genus,species,GO_terms,KEGG_KO,BiGG_Reactions,Matching_OGs,COG_functional_categories"
-
+  feature_list: "domain,phylum,class,order,family,genus,species,GO_terms,KEGG_KO,BiGG_Reactions,Matching_OGs,COG_functional_categories,predicted_gene_name"
+  #features to count combined eg. species + predicted gene name will count genes split by species
+  #provide as comma seperated list with pairs split by colons
+  feature_pairs: "predicted_gene_name:species,predicted_gene_name:genus"
 
 ################################################################
 #
