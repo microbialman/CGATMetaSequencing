@@ -74,6 +74,7 @@ python MetaSequencing/pipelines/pipeline_assembly.py make build_report
 mkdir ../Annotate
 cd ../Annotate
 #can select contigs from any of the assembly methods
+#can assign taxonomy at the ORF level (using aa alignment in Diamond with MEGAN LCA) or contig level (using nt alignment in Kraken)
 ln -s ../Assemble/contigs.dir/metaspades/* ./
 cp MetaSequencing/pipelines/pipeline_annotate.yml ./pipeline.yml
 python MetaSequencing/pipelines/pipeline_annotate.py make full

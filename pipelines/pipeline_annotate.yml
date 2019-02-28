@@ -72,6 +72,31 @@ Eggnogmapper:
 
 ################################################################
 #
+# Taxonomy Assignment Options
+#
+################################################################
+#either kraken or diamond
+#diamond uses protein based alignment at the ORF level dollowed by LCA in MEGAN
+#kraken assigns taxonomy based on nucelotide alignment at the contig level assigning all ORF the contig taxonomy
+General:
+  tax_method: "kraken"
+
+################################################################
+#
+# Kraken Options
+#
+################################################################
+
+Kraken:
+  db: "/gfs/mirror/kraken/mini/minikraken_20171019_8GB/"
+  quick: "false"
+  threads: "10"
+  #Gb per cpu
+  memory: "5"
+
+  
+################################################################
+#
 # DIAMOND options
 #
 ################################################################

@@ -12,7 +12,15 @@ Overview
 ========
 
 This pipeline uses Prodigal to detect ORFs in metagenomic assemblies.
-Eggnog mapper is then used to assign functional annotations to each ORF and MMSeqs2 to assign taxonomy using a lowest-common ancestor approach using the NCBI database. 
+Eggnog mapper is then used to assign functional annotations to each ORF.
+
+Taxonomy can then be assigned either at the ORF or contig level.
+ORF level assignment uses Diamond to align to the NCBI reference (using amino-acid sequence) and then MEGAN lowest-common ancestor approach on alignments.
+Contig level assignment uses Kraken to assign taxonomy (using nucleotide sequence) and then assigns each ORF in the contig the contigs taxonomy.
+
+Trade-off is that contig level has the potential to assign more accurate taxonomy but will be more highly influenced by chimeric contigs.
+ORF level taxonomic assignments will be less influenced by chimeric contigs but might be less accurate in the case of horizontal gene transfer events.
+ORF level assignments based on aa sequence will also suffer from reduced resolution comapred to DNA alignmnets and their shorter length relative to contigs.
 
   
 Usage
@@ -72,6 +80,8 @@ software to be in the path:
 | Diamond            | 0.9.22            | Alignment of ORFs vs NCBI database             |
 +--------------------+-------------------+------------------------------------------------+
 | MEGAN CE           | 6.11.6            | Taxonomic assignment from Diamond alignments   |
++--------------------+-------------------+------------------------------------------------+
+| Kraken             | 0.10.5            | Taxonomic assignment from contigs              |
 +--------------------+-------------------+------------------------------------------------+
 
 Also requires suitable reference databases indexed with the appropriate software versions.
@@ -201,14 +211,15 @@ def functionalAnnotChunks(infile,outfile):
 def functionalAnnot(infiles,outfile):
     statement = "cat {} >> {}".format(" ".join(infiles),outfile)
     P.run(statement)
-    
+
 ##################################################
 # Taxonomic alignment of ORFs using DIAMOND
 #################################################
 @follows(functionalAnnot)
 @follows(mkdir("taxonomic_annotations.dir"))
+@active_if(PARAMS["General_tax_method"]=="diamond")
 @transform(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides"),r"taxonomic_annotations.dir/\1.daa")
-def taxonomicAlign(infile,outfile):
+def taxonomicAlignORF(infile,outfile):
     #set memory and threads
     job_memory = str(PARAMS["Diamond_memory"])+"G"
     job_threads = int(PARAMS["Diamond_threads"])
@@ -219,8 +230,9 @@ def taxonomicAlign(infile,outfile):
 ########################################################################################################
 # Get taxanomic annotation (and optionally kegg functions) from DIAMOND alignment using MEGAN blast2lca
 ########################################################################################################
-@follows(taxonomicAlign)
-@transform(taxonomicAlign,regex(r"taxonomic_annotations.dir/(\S+).daa"),r"taxonomic_annotations.dir/\1.taxonomic.annotations")
+@follows(taxonomicAlignORF)
+@active_if(PARAMS["General_tax_method"]=="diamond")
+@transform(taxonomicAlignORF,regex(r"taxonomic_annotations.dir/(\S+).daa"),r"taxonomic_annotations.dir/\1.taxonomic.annotations")
 def meganAnnot(infile,outfile):
     job_memory = str(PARAMS["Blast2lca_memory"])+"G"
     job_threads = int(PARAMS["Blast2lca_threads"])
@@ -228,11 +240,41 @@ def meganAnnot(infile,outfile):
     statement = PipelineAnnotate.runBlast2Lca(infile,outfile,PARAMS)
     P.run(statement)
 
+###############################################################################################
+# Get taxonomic assignment using Kraken
+###############################################################################################
+@follows(functionalAnnot)
+@follows(mkdir("taxonomic_annotations.dir"))
+@active_if(PARAMS["General_tax_method"]=="kraken")
+@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"taxonomic_annotations.dir/\1.kraken_translated")
+def taxonomicAlignContig(infile,outfile):
+    #set memory and threads
+    job_memory = str(PARAMS["Kraken_memory"])+"G"
+    job_threads = int(PARAMS["Kraken_threads"])
+    #generate call to diamond
+    statement = PipelineAnnotate.runKraken(infile,outfile,PARAMS)
+    P.run(statement)
+
+##########################################################
+# Convert Kraken output to match ORF level MEGAN output
+##########################################################
+@follows(taxonomicAlignContig)
+@active_if(PARAMS["General_tax_method"]=="kraken")
+@transform(taxonomicAlignContig,regex(r"taxonomic_annotations.dir/(\S+).kraken_translated"),r"taxonomic_annotations.dir/\1.taxonomic.annotations")
+def krakenAnnot(infile,outfile):
+    #get the orf names for the sample
+    sampleName=re.search("taxonomic_annotations.dir/(\S+).kraken_translated",infile).group(1)
+    orffile="orfs.dir/{}.orf_peptides".format(sampleName)
+    statement="python {}scripts/krakenFormat.py --orfs {} --contig-taxonomy {} --orf-taxonomy-output {}".format(
+        os.path.dirname(__file__).rstrip("pipelines"),orffile,infile,outfile)
+    P.run(statement)
+
 
 ################################################
-# Generate GTF summarising ORFs and annotations
+# Generate GTF summarising ORF annotations
 ################################################
 @follows(meganAnnot)
+@follows(krakenAnnot)
 @follows(mkdir("combined_annotations.dir"))
 @transform(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides"),r"combined_annotations.dir/\1.orf_annotations.gtf")
 def mergeAnnotations(infile,outfile):

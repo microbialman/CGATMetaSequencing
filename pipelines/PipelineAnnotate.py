@@ -190,3 +190,21 @@ def runBlast2Lca(infile,outfile,params):
     bcall.append("-v {}".format(params["Blast2lca_v"]))
     return(" ".join(bcall))
 
+
+'''
+function to build call to kraken
+'''
+
+def runKraken(infile,outfile,params):
+    intermediate=outfile.replace("_translated","_out")
+    #input, output, etc.
+    kcall = ["kraken --db {} --output {} --preload".format(params["Kraken_db"],intermediate)]
+    if params["Kraken_threads"] != "false":
+        kcall.append("--threads {}".format(params["Kraken_threads"]))
+    if params["Kraken_quick"] != "false":
+        kcall.append("--quick")
+    kcall.append(infile)
+    #add call to kraken translate
+    kcall.append(" && ")
+    kcall.append("kraken-translate --mpa-format --db {} {} > {}".format(params["Kraken_db"],intermediate,outfile))
+    return(" ".join(kcall))

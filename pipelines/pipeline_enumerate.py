@@ -106,7 +106,7 @@ P.get_parameters(
        "pipeline.yml" ] )
 PARAMS = P.PARAMS
 
-FEATURES = P.as_list(PARAMS.get("General_feature_list",""))
+FEATURES = P.as_list(PARAMS.get("General_feature_list"))
 FEATUREPAIRS = P.as_list(PARAMS.get("General_feature_pairs"))
 FEATUREPAIRS = ["{}_BY_{}".format(x.split(":")[0],x.split(":")[1]) for x in FEATUREPAIRS]
 ALLFEATURES = FEATURES+FEATUREPAIRS
@@ -208,7 +208,7 @@ def countFeatures(infile,outfile):
     job_threads = int(PARAMS["featureCounts_threads_otherfeats"])
     job_memory = str(PARAMS["featureCounts_memory_otherfeats"])+"G"
     statement = "python {}scripts/countFeat.py --orf_counts {} --features {} --gtf {} --outdir annotation_counts.dir/ --logfile {}".format(
-        os.path.dirname(__file__).rstrip("pipelines"),infile,",".join(FEATUREPAIRS),filemap.gtfpath,outfile)
+        os.path.dirname(__file__).rstrip("pipelines"),infile,",".join(FEATURES),filemap.gtfpath,outfile)
     P.run(statement)
 
 
