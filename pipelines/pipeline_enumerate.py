@@ -158,7 +158,9 @@ def mapSamples(infile,outfile):
     bowtie.indir = ""
     statementlist = []
     #remove all comments from read names in files (trimming can add comments making non-matching pairs)
-    statementlist.append(bowtie.cleanNames())
+    #only skip if a failure in a previous run at the bowtie step
+    if PARAMS["Bowtie_skip_file_prep"] != "true":
+        statementlist.append(bowtie.cleanNames())
     #directory for output
     statementlist.append("mkdir -p {}".format(os.path.dirname(outfile)))
     #call to bowtie

@@ -28,6 +28,8 @@ BowtieDB:
   seed: "4"
 
 Bowtie:
+    #only use skip file prep if there is a crash of bowtie after a previous file prep
+  skip_file_prep: "false"
   phred_type: "33"
 #alignment mode (end-to-end or local) (NOTE: CHANGE MA & SCORE_MIN ALSO)
   mode: "end-to-end"

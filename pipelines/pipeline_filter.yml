@@ -22,7 +22,7 @@ SortMeRNA:
 #comma seperated list of paths to reference rna fastas to use for filtering
   rna_refs: "/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/rfam-5.8s-database-id98.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/rfam-5s-database-id98.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-arc-16s-id95.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-arc-23s-id98.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-bac-16s-id90.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-bac-23s-id98.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-euk-18s-id95.fasta,/gfs/apps/bio/sortmerna-2.1b/rRNA_databases/silva-euk-28s-id98.fasta"
 #comma seperated list of paths to refence indexes in an order matching the rna fastas above
-#if none provided (false) index files will be generated
+#if none provided (false) index files will be generated, otherwise provide index locations in same order as fasta files above
   rna_index: "false"
   paired: "in"
   fastx: "true"
@@ -48,6 +48,8 @@ SortMeRNA:
 
 #bowtie settings
 Bowtie:
+  #only use skip file prep if there is a crash of bowtie after a previous file prep
+  skip_file_prep: "false"
   genome_db: "/gfs/mirror/genomes/bowtie/mm10"
   phred_type: "33"
   mode: "end-to-end"

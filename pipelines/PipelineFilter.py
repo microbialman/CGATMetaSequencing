@@ -133,6 +133,7 @@ class Bowtie2:
         self.params = params
 
     #function to strip comments from fastq and fasta names that interfere with bowtie paired mode
+    #skipped if prep_files is false (used to skip if crash during first bowtie run)
     def cleanNames(self):
         statementlist = []
         wd = self.indir

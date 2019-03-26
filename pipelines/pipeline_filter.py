@@ -184,7 +184,9 @@ def mapBowtie2(infile,outfile):
     bowtie = PipelineFilter.Bowtie2(seqdat,outfile,PARAMS,PARAMS["Bowtie_genome_db"])
     statementlist = []
     #remove all comments from read names in files (trimming can add comments making non-matching readnames in pairs)
-    statementlist.append(bowtie.cleanNames())
+    #can skip this if crashed in previous run using the skip_file_prep parameter
+    if PARAMS["Bowtie_skip_file_prep"] != "true":
+        statementlist.append(bowtie.cleanNames())
     #directory for output
     statementlist.append("mkdir -p {}".format(os.path.dirname(outfile)))
     #call to bowtie
