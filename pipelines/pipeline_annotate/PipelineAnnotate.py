@@ -4,7 +4,7 @@ classes and utility functions for pipeline_metaannotate.py
 '''
 
 import os
-import PipelineAssembly
+
 
 '''
 function to build call to Prodigal

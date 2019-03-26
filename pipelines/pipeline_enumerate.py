@@ -101,7 +101,7 @@ import subprocess
 # load options from the config file
 import cgatcore.pipeline as P
 P.get_parameters(
-       ["%s.yml" % __file__[:-len(".py")],
+       ["%s/pipeline.yml" % __file__[:-len(".py")],
        "../pipeline.yml",
        "pipeline.yml" ] )
 PARAMS = P.PARAMS
@@ -111,9 +111,9 @@ FEATUREPAIRS = P.as_list(PARAMS.get("General_feature_pairs"))
 FEATUREPAIRS = ["{}_BY_{}".format(x.split(":")[0],x.split(":")[1]) for x in FEATUREPAIRS]
 ALLFEATURES = FEATURES+FEATUREPAIRS
 
-import PipelineAssembly
-import PipelineEnumerate
-import PipelineFilter
+from pipeline_assembly import PipelineAssembly
+from pipeline_enumerate import PipelineEnumerate
+from pipeline_filter import PipelineFilter
 
 #get all files within the directory to process
 SEQUENCEFILES = ("*.fasta", "*.fasta.gz", "*.fasta.1.gz", "*.fasta.1",

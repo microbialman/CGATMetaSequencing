@@ -140,7 +140,7 @@ import os
 import sys
 import math
 
-import PipelineAssembly
+from pipeline_assembly import PipelineAssembly
 
 
 ###################################################
@@ -151,7 +151,7 @@ import PipelineAssembly
 # load options from the config file
 import cgatcore.pipeline as P
 P.get_parameters(
-       ["%s.yml" % __file__[:-len(".py")],
+       ["%s/pipeline.yml" % __file__[:-len(".py")],
        "../pipeline.yml",
        "pipeline.yml" ] )
 PARAMS = P.PARAMS

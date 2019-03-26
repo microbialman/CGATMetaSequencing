@@ -115,13 +115,13 @@ import subprocess
 # load options from the config file
 import cgatcore.pipeline as P
 P.get_parameters(
-       ["%s.yml" % __file__[:-len(".py")],
+       ["%s/pipeline.yml" % __file__[:-len(".py")],
        "../pipeline.yml",
        "pipeline.yml" ] )
 PARAMS = P.PARAMS
 
-import PipelineAssembly
-import PipelineAnnotate
+from pipeline_assembly import PipelineAssembly
+from pipeline_annotate import PipelineAnnotate
 
 #get all files within the directory to process
 SEQUENCEFILES = ("*.fasta", "*.fasta.gz", "*.fasta.1.gz", "*.fasta.1",

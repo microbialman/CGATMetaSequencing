@@ -4,7 +4,10 @@ classes and utility functions for pipeline_filter.py
 '''
 
 import os
-import PipelineAssembly
+import sys
+sys.path.append('..')
+
+from pipeline_assembly import PipelineAssembly
 
 '''
 class to build call to SortMeRNA

@@ -9,7 +9,7 @@ MetaSequencing depends on installation of **[CGATCore](https://github.com/cgat-d
 
 Bioinformatics tools and R packages used by the pipelines are detailed at the head of each pipeline script and should be installed as required. MetaSequencing pipelines can then be used by cloning or downloading this repository and running scripts as detailed below.
 
-## Running MetaSequncing pipelines
+## Running MetaSequencing pipelines
 
 Each stage/pipeline within MetaSequencing can be called independently. Pipelines are run within working directories containing the FASTQ files to be analysed. The pipelines have largely been tested using paired-end FASTQ files but have been developed to handle other formats for certain jobs.
 
@@ -17,9 +17,9 @@ When running multiple stages, the output files of each step can be symlinked int
 
 ### Configuration
 
-Before running a pipeline it must be configured by specifying its parameters within the associated YAML file. Example *.yml* files can be found in the *pipelines* folder.
+Before running a pipeline it must be configured by specifying its parameters within the associated YAML file. Example *.yml* files can be found in the *pipelines/pipeline_x* folders.
 
-For instance, settings for the *pipelines_filter.py* pipeline, such as skipping rRNA filtering, can be adjusted in the *pipelines_filter.yml* file. The *.yml* file should be edited within the pipelines folder, or if using custom parameters for a single run, copied into the working directory from which the pipeline will be run where it should be named *pipeline.yml*.
+For instance, settings for the *pipeline_filter.py* pipeline, such as skipping rRNA filtering, can be adjusted in the *pipeline_filter/pipeline.yml* file. The *.yml* file can be edited within the pipelines folder to set the parameters for every run, or if using custom parameters for a single run, a copy can be generated in the working directory by calling (for example) `python MetaSequencing/pipelines/pipeline_filter.py config`. Any settings set in the *pipeline.yml* file in the working directory will overwrite those set in the global settings files in the pipelines folders.
 
 ### Running
 
@@ -27,17 +27,17 @@ Once configured, a pipeline (e.g. *pipeline_filter*) can be called using:
 
 `python MetaSequencing/pipelines/pipeline_filter.py make full`
 
-This will run all jobs within the pipeline on the FASTQ files in the working directory. The pipelines expect files to have a specific naming system as detailed in the pipeline scripts.
+This will run all jobs within the pipeline on the FASTQ files in the working directory. The pipelines expect files to have a specific suffix naming system as detailed in the pipeline scripts.
 
 Individual jobs within each pipeline can also be called, such as only rRNA filtering, using:
 
 `python MetaSequencing/pipelines/pipeline_filter.py make runSortMeRNA`
 
-A list of jobs within each pipeline can be seen by running `python pipeline_filter.py show full`.
+A list of jobs that each pipeline carries out can be seen by running `python pipeline_filter.py show full`.
 
-The pipelines automatically handle tracking of jobs. If a job crashes re-running the pipeline should only carry-out those jobs which are incomplete.
+The pipelines automatically handle tracking of jobs. If a job crashes, re-running the pipeline should only carry-out those jobs which are incomplete.
 
-More info on running CGAT pipelines can be found [here](https://cgat-core.readthedocs.io/en/latest/index.html).
+More info on general running of CGAT pipelines can be found [here](https://cgat-core.readthedocs.io/en/latest/index.html).
 
 ### Reports
 
@@ -46,11 +46,11 @@ For example for *pipeline_filter* the command would be:
 
 `python MetaSequencing/pipelines/pipeline_filter.py make build_report`
 
-Reports are output to *report.dir*.
+HTML reports are output to *report.dir*.
 
 ### Example Run
 
-Below is an example of commands that could be used for a complete MetaSequncing run. This assumes starting from paried-end FASTQ reads that have undergone prior QC (trimming and quality filtering) and have the naming system *SampleName.fastq.1.gz and SampleName.fastq.2.gz*.
+Below is an example of commands that could be used for a complete MetaSequencing run. This assumes starting from paired-end FASTQ reads that have undergone prior QC (trimming and quality filtering) and have the naming system *SampleName.fastq.1.gz and SampleName.fastq.2.gz*.
 
 
 ```sh
@@ -59,15 +59,17 @@ Below is an example of commands that could be used for a complete MetaSequncing 
 mkdir Filter
 cd Filter
 ln -s path_to_reads/*.gz ./
-#copy the pipeline configuration file (this will also need to be edited to set parameters) 
-cp MetaSequencing/pipelines/pipeline_filter.yml ./pipeline.yml
+#generate the pipeline configuration file (this will need to be edited to set parameters) 
+python MetaSequencing/pipelines/pipeline_filter.py config
+#run the full filtering step
 python MetaSequencing/pipelines/pipeline_filter.py make full
+#make a summary report
 python MetaSequencing/pipelines/pipeline_filter.py make build_report
 
 mkdir ../Assemble
 cd ../Assemble
 ln -s ../Filter/filtered_reads.dir/* ./
-cp MetaSequencing/pipelines/pipeline_assembly.yml ./pipeline.yml
+python MetaSequencing/pipelines/pipeline_assembly.py config
 python MetaSequencing/pipelines/pipeline_assembly.py make full
 python MetaSequencing/pipelines/pipeline_assembly.py make build_report
 
@@ -76,7 +78,7 @@ cd ../Annotate
 #can select contigs from any of the assembly methods
 #can assign taxonomy at the ORF level (using aa alignment in Diamond with MEGAN LCA) or contig level (using nt alignment in Kraken)
 ln -s ../Assemble/contigs.dir/metaspades/* ./
-cp MetaSequencing/pipelines/pipeline_annotate.yml ./pipeline.yml
+python MetaSequencing/pipelines/pipeline_annotate.py config
 python MetaSequencing/pipelines/pipeline_annotate.py make full
 python MetaSequencing/pipelines/pipeline_annotate.py make build_report
 
@@ -85,7 +87,7 @@ python MetaSequencing/pipelines/pipeline_annotate.py make build_report
 mkdir ../Enumerate
 cd ../Enumerate
 ln -s ../Filter/filtered_reads.dir/* ./
-cp MetaSequencing/pipelines/pipeline_enumerate.yml ./pipeline.yml
+python MetaSequencing/pipelines/pipeline_enumerate.py config
 python MetaSequencing/pipelines/pipeline_enumerate.py make full
 python MetaSequencing/pipelines/pipeline_enumerate.py make build_report
 
