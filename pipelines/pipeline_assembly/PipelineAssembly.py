@@ -37,7 +37,6 @@ class SequencingData:
         self.filepath = infile
         self.filename = os.path.basename(infile)
         self.openfile = None
-        self.readcount = None
         self.cleanname = None
         self.head = []
         '''check file can be opened on init & capture header (first 5 lines used for interleave and format checks)'''
@@ -98,16 +97,6 @@ class SequencingData:
     def cleanName(self):
         seqfile_regex =r"(\S+).(fasta$|fasta.gz|fasta.1.gz|fasta.1|fna$|fna.gz|fna.1.gz|fna.1|fa$|fa.gz|fa.1.gz|fa.1|fastq$|fastq.gz|fastq.1.gz|fastq.1)"
         self.cleanname=re.search(seqfile_regex,self.filename).group(1)
-
-    '''count number of reads in the file using IOTools
-    this is not run on initialisation'''
-    def readCount(self):
-        count = IOTools.get_num_lines(self.filepath, ignore_comments=False)
-        divisor = 2
-        if self.fileformat == "fastq":
-            divisor = 4
-        reads = count/divisor
-        self.readcount=reads
         
 '''
 general class for assembly algorithms

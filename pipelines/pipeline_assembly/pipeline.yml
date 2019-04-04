@@ -4,7 +4,11 @@
 #
 ################################################################
 
-# "true/false" flags will add or remove command flags 
+# "true/false" flags will add or remove command flags if the option does not accept parameters 
+
+General:
+  #option to check format of input files before running - not likely necessary
+  check_input: "false"
 
 ################################################################
 #

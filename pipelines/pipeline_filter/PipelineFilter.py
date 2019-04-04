@@ -283,27 +283,28 @@ def CleanUp(seqdat,outfile,params):
 
 
 #function to summarise reads filtered at each step
-def CountReads(infile,params):
+def CountReads(infile,outfile,params):
+    def counter(seqfile,outfile):
+        sdat=PipelineAssembly.SequencingData(seqfile)
+        div=4
+        if sdat.fileformat == "fasta":
+            div=2
+        return("zcat {} | wc -l | awk 'BEGIN {{ORS=\"\"}}; END {{x=$1/{}; print \"\\t\"x}}' >> {}".format(seqfile,div,outfile))
+        
     original = PipelineAssembly.SequencingData(infile)
-    original.readCount()
-    rrna = False
-    genome = False
+    call=['printf "File\\tInput\\tPost_rRNA_Filtering\\tPost_Genome_Filtering\\n{}" > {}'.format(original.cleanname,outfile)]
+    ocount = counter(infile,outfile)
+    rcount = 'printf "\tNA" >> {}'.format(outfile)
+    gcount = 'printf "\tNA" >> {}'.format(outfile)
     rnadir = os.getcwd()+"/rrna_filter_out.dir/"
     gendir = os.getcwd()+"/genome_filter_out.dir/"
-    if params["General_rrna_filter"] == "true":
-        rrna = PipelineAssembly.SequencingData(rnadir+original.cleanname+"/other_"+original.filename)
-        rrna.readCount()
+    if params["General_rrna_filter"] == "true": 
+        rcount = counter(rnadir+original.cleanname+"/other_"+original.filename,outfile)
     if params["General_host_filter"] == "true":
-        genome = PipelineAssembly.SequencingData(gendir+original.cleanname+"/hostfiltered_"+original.filename)
-        genome.readCount()
-    ocount=original.readcount
-    if rrna == False:
-        rcount = "NA"
-    else:
-        rcount = rrna.readcount
-    if genome == False:
-        gcount = "NA"
-    else:
-        gcount = genome.readcount
-    return("{}\t{}\t{}\t{}\n".format(original.cleanname,ocount,rcount,gcount))
+        gcount = counter(gendir+original.cleanname+"/hostfiltered_"+original.filename,outfile)
+    call.append(ocount)
+    call.append(rcount)
+    call.append(gcount)
+    call.append('printf "\\n" >> {}'.format(outfile))
+    return(" && ".join(call))
         

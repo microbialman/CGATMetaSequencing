@@ -168,9 +168,10 @@ SEQUENCEFILES_REGEX = regex(
 
 
 ###################################################
-# Check the input file, count number of reads
+# Check the input file
 ###################################################
 @follows(mkdir("filesummaries.dir"))
+@active_if(PARAMS["General_check_input"]=="true")
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
            r"filesummaries.dir/\1.seqsummary")
@@ -179,8 +180,6 @@ def checkFile(infile, outfile):
     outf=open(outfile,'w')
     outf.write("name\t{}\nformat\t{}\ncompressed\t{}\npaired\t{}\ninterleaved\t{}\n".format(
         seqdat.filename,seqdat.fileformat,seqdat.compressed,seqdat.paired,seqdat.interleaved))
-    seqdat.readCount()
-    outf.write("read_count\t{}\n".format(seqdat.readcount))
     outf.close()
 
 ##################################################

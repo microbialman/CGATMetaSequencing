@@ -231,10 +231,8 @@ def full():
 @follows(mkdir("report.dir/per_file_summaries/"))
 @transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"report.dir/per_file_summaries/\1.filtersummary.txt")
 def summariseCounts(infile,outfile):
-    filtercounts = open(outfile,'w',1)
-    filtercounts.write("File\tInput\tPost_rRNA_Filtering\tPost_Genome_Filtering\n")
-    filtercounts.write(PipelineFilter.CountReads(infile,PARAMS))
-    filtercounts.close()
+    statement = PipelineFilter.CountReads(infile,outfile,PARAMS)
+    P.run(statement)
     
 #combine these into one file
 @follows(summariseCounts)

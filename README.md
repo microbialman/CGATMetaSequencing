@@ -19,7 +19,11 @@ When running multiple stages, the output files of each step can be symlinked int
 
 Before running a pipeline it must be configured by specifying its parameters within the associated YAML file. Example *.yml* files can be found in the *pipelines/pipeline_x* folders.
 
-For instance, settings for the *pipeline_filter.py* pipeline, such as skipping rRNA filtering, can be adjusted in the *pipeline_filter/pipeline.yml* file. The *.yml* file can be edited within the pipelines folder to set the parameters for every run, or if using custom parameters for a single run, a copy can be generated in the working directory by calling (for example) `python MetaSequencing/pipelines/pipeline_filter.py config`. Any settings set in the *pipeline.yml* file in the working directory will overwrite those set in the global settings files in the pipelines folders.
+For instance, settings for the *pipeline_filter.py* pipeline, such as skipping rRNA filtering, can be adjusted in the *pipeline_filter/pipeline.yml* file. The *.yml* file can be edited within the pipelines folder to set the parameters for every run or, if using custom parameters for a single run, a copy can be generated in the working directory by calling (for example):
+
+`python MetaSequencing/pipelines/pipeline_filter.py config`
+
+Any settings set in the *pipeline.yml* file in the working directory will overwrite those set in the global settings files in the pipelines folders.
 
 ### Running
 
@@ -50,7 +54,7 @@ HTML reports are output to *report.dir*.
 
 ### Example Run
 
-Below is an example of commands that could be used for a complete MetaSequencing run. This assumes starting from paired-end FASTQ reads that have undergone prior QC (trimming and quality filtering) and have the naming system *SampleName.fastq.1.gz and SampleName.fastq.2.gz*.
+Below is an example of commands that could be used for a complete MetaSequencing run. This assumes starting from paired-end FASTQ reads that have undergone prior QC (trimming and quality filtering) and have the naming system *SampleName.fastq.1.gz* and *SampleName.fastq.2.gz*.
 
 
 ```sh
