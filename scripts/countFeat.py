@@ -24,7 +24,7 @@ for i in infile:
        header+=1
     else:
         row=i.strip("\n").split()
-        orfcounts[row[0]]=int(row[-1])
+        orfcounts[row[0]]=float(row[-1])
 
 def parseAnnot(geneid,annot):
     if annot == "":
@@ -40,7 +40,7 @@ def parseAnnot(geneid,annot):
                 vals=val.split(',')
                 for y in vals:
                     if y not in featurecounts[feat]:
-                        featurecounts[feat][y]=0
+                        featurecounts[feat][y]=0.0
                     featurecounts[feat][y]+=orfcounts[geneid]
                    
     

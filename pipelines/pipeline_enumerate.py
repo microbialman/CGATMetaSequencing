@@ -171,7 +171,6 @@ def mapSamples(infile,outfile):
     statementlist.append("rm {}".format(outfile.replace(".bam",".sam")))
     statement = " && ".join(statementlist)
     P.run(statement)
-
     
 ########################################################################
 # Count reads mapping to each ORF using featureCounts and GTF files
@@ -195,10 +194,21 @@ def countOrfs(infile,outfile):
     statement = PipelineEnumerate.countFeatures(feat,filemap.shortgtfpath,paired,outfile,mapping,PARAMS)
     P.run(statement)
 
+################################################
+# TPM normalise if enabled
+################################################
+@follows(countOrfs)
+@active_if(PARAMS["General_tpm"]=="true")
+@transform(countOrfs,regex(r"orf_counts.dir/(\S+).tsv"),r"orf_counts.dir/\1.tpm.tsv")
+def makeTPM(infile,outfile):
+    statement = "python {}scripts/makeTPM.py --orf_counts {} --output {}".format(
+        os.path.dirname(__file__).rstrip("pipelines"),infile,outfile)
+    P.run(statement)
+
 ############################################################
 # Counting taxa and function features from gene_id counts
 ############################################################
-@follows(countOrfs)
+@follows(makeTPM)
 @follows(mkdir("annotation_counts.dir"))
 @follows(mkdir("annotation_counts.dir/logs"))
 @mkdir(FEATURES,regex(r"(\S+)"),r"annotation_counts.dir/\1")
@@ -211,6 +221,9 @@ def countFeatures(infile,outfile):
     job_memory = str(PARAMS["featureCounts_memory_otherfeats"])+"G"
     statement = "python {}scripts/countFeat.py --orf_counts {} --features {} --gtf {} --outdir annotation_counts.dir/ --logfile {}".format(
         os.path.dirname(__file__).rstrip("pipelines"),infile,",".join(FEATURES),filemap.gtfpath,outfile)
+    #also count the tpm counts if enabled
+    if PARAMS["General_tpm"]=="true":
+        statement += " && python {}scripts/countFeat.py --orf_counts {} --features {} --gtf {} --outdir annotation_counts.dir/ --logfile {}".format(os.path.dirname(__file__).rstrip("pipelines"),infile.replace(".tsv",".tpm.tsv"),",".join(FEATURES),filemap.gtfpath,outfile.replace(".log",".tpm.log"))
     P.run(statement)
 
 
@@ -228,6 +241,10 @@ def countPairedFeatures(infile,outfile):
     job_memory = str(PARAMS["featureCounts_memory_otherfeats"])+"G"
     statement = "python {}scripts/countFeatPairs.py --orf_counts {} --feature_pairs {} --gtf {} --outdir annotation_counts.dir/ --logfile {}".format(
         os.path.dirname(__file__).rstrip("pipelines"),infile,",".join(FEATUREPAIRS),filemap.gtfpath,outfile)
+    #count the tpm counts if enabled
+    if PARAMS["General_tpm"]=="true":
+        statement += " && python {}scripts/countFeatPairs.py --orf_counts {} --feature_pairs {} --gtf {} --outdir annotation_counts.dir/ --logfile {}".format(
+            os.path.dirname(__file__).rstrip("pipelines"),infile.replace(".tsv",".tpm.tsv"),",".join(FEATUREPAIRS),filemap.gtfpath,outfile.replace(".log",".tpm.log"))
     P.run(statement)
     
     
@@ -238,15 +255,27 @@ def countPairedFeatures(infile,outfile):
 @follows(mkdir("combined_counts.dir"))
 @originate(["combined_counts.dir/{}_combined_counts.tsv".format(x) for x in ALLFEATURES])
 def combineCounts(outfile):
-    feat = re.search("combined_counts.dir/(\S+)_combined_counts.tsv",outfile).group(1)
-    statement = "python {}scripts/combineCounts.py --feature {} --countdir {} --outfile {}".format(os.path.dirname(__file__).rstrip("pipelines"),feat,"annotation_counts.dir",outfile)
+    feat = re.search("combined_counts.dir/(\S+)_combined_counts\.tsv",outfile).group(1)
+    statement = "python {}scripts/combineCounts.py --feature {} --countdir {} --outfile {} --tpm false".format(os.path.dirname(__file__).rstrip("pipelines"),feat,"annotation_counts.dir",outfile)
     P.run(statement)
 
+#################################################
+# Pool TPM counts if enabled
+#################################################
 @follows(combineCounts)
+@active_if(PARAMS["General_tpm"]=="true")
+@follows(mkdir("combined_counts_tpm.dir"))
+@originate(["combined_counts_tpm.dir/{}_combined_counts.tpm.tsv".format(x) for x in ALLFEATURES])
+def combineTPMCounts(outfile):
+    feat = re.search("combined_counts_tpm.dir/(\S+)_combined_counts\.tpm\.tsv",outfile).group(1)
+    statement = "python {}scripts/combineCounts.py --feature {} --countdir {} --outfile {} --tpm true".format(os.path.dirname(__file__).rstrip("pipelines"),feat,"annotation_counts.dir",outfile)
+    P.run(statement)    
+
+@follows(combineTPMCounts)
 def full():
     pass
 
-#Make report
+#Make report (uses raw counts not tpms)
 @follows(mkdir("report.dir"))
 def build_report():
     scriptloc = "/".join(os.path.dirname(sys.argv[0]).split("/")[0:-1])+"/scripts/enumeration_report.Rmd"

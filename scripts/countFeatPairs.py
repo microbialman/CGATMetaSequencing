@@ -25,7 +25,7 @@ for i in infile:
        header+=1
     else:
         row=i.strip("\n").split()
-        orfcounts[row[0]]=int(row[-1])
+        orfcounts[row[0]]=float(row[-1])
 
 #function to parse the feature names
 def parsePairedAnnot(geneid,annot):
@@ -50,7 +50,7 @@ def parsePairedAnnot(geneid,annot):
                 featname=""
             if featname != "":
                 if featname not in featurecounts[j]:
-                    featurecounts[j][featname]=0
+                    featurecounts[j][featname]=0.0
                 featurecounts[j][featname]+=orfcounts[geneid]
     
 featurecounts={}
