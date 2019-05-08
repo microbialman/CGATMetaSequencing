@@ -27,6 +27,13 @@ for i in infile:
         row=i.strip("\n").split()
         orfcounts[row[0]]=float(row[-1])
 
+def featCount(fname,j,c):
+    if fname not in featurecounts[j]:
+        featurecounts[j][fname]=0.0
+    featurecounts[j][fname]+=c
+    
+        
+        
 #function to parse the feature names
 def parsePairedAnnot(geneid,annot):
     if annot == "":
@@ -37,22 +44,26 @@ def parsePairedAnnot(geneid,annot):
             if i!= "":
                 ann=i.split('"')
                 feat=ann[0].strip(" ")
-                val=ann[1].strip('"')
+                val=ann[1].strip('"').split(",")
                 subdic[feat]=val
         for j in fp:
             if j[0] in subdic and j[1] in subdic:
-                featname="{}_BY_{}".format(subdic[j[0]],subdic[j[1]])
+                for k in subdic[j[0]]:
+                    for l in subdic[j[1]]:
+                        featname="{}_BY_{}".format(k,l)
+                        featCount(featname,j,orfcounts[geneid])
             elif j[0] in subdic:
-                featname="{}_BY_UNASSIGNED".format(subdic[j[0]])
+                for k in subdic[j[0]]:
+                    featname="{}_BY_UNANNOTATED".format(k)
+                    featCount(featname,j,orfcounts[geneid])
             elif j[1] in subdic:
-                featname="UNASSIGNED_BY_{}".format(subdic[j[1]])
+                for l in subdic[j[1]]:
+                    featname="UNANNOTATED_BY_{}".format(l)
+                    featCount(featname,j,orfcounts[geneid])
             else:
-                featname=""
-            if featname != "":
-                if featname not in featurecounts[j]:
-                    featurecounts[j][featname]=0.0
-                featurecounts[j][featname]+=orfcounts[geneid]
-    
+                featname="UNANNOTATED_BY_UNANNOTATED"
+                featCount(featname,j,orfcounts[geneid])
+            
 featurecounts={}
 for i in fp:
     featurecounts[i]={}

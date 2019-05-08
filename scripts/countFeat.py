@@ -26,6 +26,12 @@ for i in infile:
         row=i.strip("\n").split()
         orfcounts[row[0]]=float(row[-1])
 
+def unAnnot(feat,c):
+    if "UNANNOTATED" not in featurecounts[feat]:
+        featurecounts[feat]["UNANNOTATED"]=0.0
+    featurecounts[feat]["UNANNOTATED"]+=c
+
+
 def parseAnnot(geneid,annot):
     if annot == "":
         return(None)
@@ -34,8 +40,9 @@ def parseAnnot(geneid,annot):
         feat=annot[0].strip(" ")
         val=annot[1].strip('"')
         if feat in f:
+            foundfeats.append(feat)
             if val == "":
-                return(None)
+                unAnnot(feat,orfcounts[geneid])
             else:
                 vals=val.split(',')
                 for y in vals:
@@ -52,8 +59,14 @@ for i in gtffile:
     row=i.strip("\n").split("\t")
     annotations=row[-1].split(";")
     geneid=annotations[0].split(" ")[1].strip('"')
+    #list to find annotations missing on an ORF, its counts will be give to UNANNOTATED
+    foundfeats=[]
     for x in annotations[1:]:
         parseAnnot(geneid,x)
+    for i in f:
+        if i not in foundfeats:
+            unAnnot(i,orfcounts[geneid]) 
+    
 
 #write out the files
 for i in featurecounts:
