@@ -26,7 +26,7 @@ Ribosomal RNA filtering **`r rrna`** carried out and host genome filtering **`r 
 
 ```{r, echo=FALSE}
 if(rrna=="was not"){sfile$Post_rRNA_Filtering=sfile$Input}
-if(rrna=="was not"){sfile$Post_Genome_Filtering=sfile$Post_rRNA_Filtering}
+if(genome=="was not"){sfile$Post_Genome_Filtering=sfile$Post_rRNA_Filtering}
 
 om=mean(sfile$Input)
 osd=sd(sfile$Input)
