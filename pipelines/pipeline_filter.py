@@ -159,7 +159,7 @@ def runSortMeRNA(infile,outfile):
         statement = sortmerna.build()
     else:
         #if skipping rRNA filtering symlink files and make appropriate directory
-        statementlist= ["rm -r ref_index.dir"]
+        statementlist= []
         statementlist.append('mkdir -p rrna_filter_out.dir/{}'.format(seqdat.cleanname))
         statementlist.append('ln -s {} {}'.format(os.getcwd()+"/"+infile,outfile))
         if seqdat.paired == True and seqdat.interleaved == False:

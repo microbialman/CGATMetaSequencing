@@ -294,8 +294,8 @@ def CountReads(infile,outfile,params):
     original = PipelineAssembly.SequencingData(infile)
     call=['printf "File\\tInput\\tPost_rRNA_Filtering\\tPost_Genome_Filtering\\n{}" > {}'.format(original.cleanname,outfile)]
     ocount = counter(infile,outfile)
-    rcount = 'printf "\tNA" >> {}'.format(outfile)
-    gcount = 'printf "\tNA" >> {}'.format(outfile)
+    rcount = 'printf "\\tNA" >> {}'.format(outfile)
+    gcount = 'printf "\\tNA" >> {}'.format(outfile)
     rnadir = os.getcwd()+"/rrna_filter_out.dir/"
     gendir = os.getcwd()+"/genome_filter_out.dir/"
     if params["General_rrna_filter"] == "true": 
