@@ -192,19 +192,22 @@ def runBlast2Lca(infile,outfile,params):
 
 
 '''
-function to build call to kraken
+function to build call to kraken2
 '''
 
-def runKraken(infile,outfile,params):
+def runKraken(infile,outfile,params,taxformscript):
     intermediate=outfile.replace("_translated","_out")
     #input, output, etc.
-    kcall = ["kraken --db {} --output {} --preload".format(params["Kraken_db"],intermediate)]
+    kcall = ["kraken2 --db {} --output {}".format(params["Kraken_db"],intermediate)]
     if params["Kraken_threads"] != "false":
         kcall.append("--threads {}".format(params["Kraken_threads"]))
     if params["Kraken_quick"] != "false":
         kcall.append("--quick")
+    if params["Kraken_confidence"] != "false":
+        kcall.append("--confidence {}".format(params["Kraken_confidence"]))
+    if params["Kraken_minqual"] != "false":
+        kcall.append("--minimum-base-quality {}".format(params["Kraken_minqual"]))
     kcall.append(infile)
-    #add call to kraken translate
-    kcall.append(" && ")
-    kcall.append("kraken-translate --mpa-format --db {} {} > {}".format(params["Kraken_db"],intermediate,outfile))
+    #add call to kraken translating script
+    kcall.append(" && python {} --krakenout {} --translatedout {}".format(taxformscript,intermediate,outfile))
     return(" ".join(kcall))

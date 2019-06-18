@@ -81,7 +81,9 @@ software to be in the path:
 +--------------------+-------------------+------------------------------------------------+
 | MEGAN CE           | 6.11.6            | Taxonomic assignment from Diamond alignments   |
 +--------------------+-------------------+------------------------------------------------+
-| Kraken             | 0.10.5            | Taxonomic assignment from contigs              |
+| Kraken2            | 2.0.8-beta        | Taxonomic assignment from contigs              |
++--------------------+-------------------+------------------------------------------------+
+| Taxonkit           | 0.3.0             | Translation of NCBI taxids to taxonomic names  |
 +--------------------+-------------------+------------------------------------------------+
 
 Also requires suitable reference databases indexed with the appropriate software versions.
@@ -219,7 +221,7 @@ def functionalAnnot(infiles,outfile):
 @follows(mkdir("taxonomic_annotations.dir"))
 @active_if(PARAMS["General_tax_method"]=="diamond")
 @transform(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides"),r"taxonomic_annotations.dir/\1.daa")
-def taxonomicAlignORF(infile,outfile):
+def diamondAlignORF(infile,outfile):
     #set memory and threads
     job_memory = str(PARAMS["Diamond_memory"])+"G"
     job_threads = int(PARAMS["Diamond_threads"])
@@ -230,9 +232,9 @@ def taxonomicAlignORF(infile,outfile):
 ########################################################################################################
 # Get taxanomic annotation (and optionally kegg functions) from DIAMOND alignment using MEGAN blast2lca
 ########################################################################################################
-@follows(taxonomicAlignORF)
+@follows(diamondAlignORF)
 @active_if(PARAMS["General_tax_method"]=="diamond")
-@transform(taxonomicAlignORF,regex(r"taxonomic_annotations.dir/(\S+).daa"),r"taxonomic_annotations.dir/\1.taxonomic.annotations")
+@transform(diamondAlignORF,regex(r"taxonomic_annotations.dir/(\S+).daa"),r"taxonomic_annotations.dir/\1.taxonomic.annotations")
 def meganAnnot(infile,outfile):
     job_memory = str(PARAMS["Blast2lca_memory"])+"G"
     job_threads = int(PARAMS["Blast2lca_threads"])
@@ -241,27 +243,27 @@ def meganAnnot(infile,outfile):
     P.run(statement)
 
 ###############################################################################################
-# Get taxonomic assignment using Kraken
+# Get taxonomic assignment using Kraken2 and translate NCBI taxids to mpa style names
 ###############################################################################################
 @follows(functionalAnnot)
 @follows(mkdir("taxonomic_annotations.dir"))
 @active_if(PARAMS["General_tax_method"]=="kraken")
 @transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"taxonomic_annotations.dir/\1.kraken_translated")
-def taxonomicAlignContig(infile,outfile):
+def krakenAlignContig(infile,outfile):
     #set memory and threads
     job_memory = str(PARAMS["Kraken_memory"])+"G"
     job_threads = int(PARAMS["Kraken_threads"])
     #generate call to diamond
-    statement = PipelineAnnotate.runKraken(infile,outfile,PARAMS)
+    statement = PipelineAnnotate.runKraken(infile,outfile,PARAMS,"{}scripts/translateKraken2.py".format(os.path.dirname(__file__).rstrip("pipelines")))
     P.run(statement)
 
-##########################################################
-# Convert Kraken output to match ORF level MEGAN output
-##########################################################
-@follows(taxonomicAlignContig)
+######################################################################
+# Convert Kraken2 contig level output to match ORF level MEGAN output
+######################################################################
+@follows(krakenAlignContig)
 @active_if(PARAMS["General_tax_method"]=="kraken")
-@transform(taxonomicAlignContig,regex(r"taxonomic_annotations.dir/(\S+).kraken_translated"),r"taxonomic_annotations.dir/\1.taxonomic.annotations")
-def krakenAnnot(infile,outfile):
+@transform(krakenAlignContig,regex(r"taxonomic_annotations.dir/(\S+).kraken_translated"),r"taxonomic_annotations.dir/\1.taxonomic.annotations")
+def krakenFormatAnnot(infile,outfile):
     #get the orf names for the sample
     sampleName=re.search("taxonomic_annotations.dir/(\S+).kraken_translated",infile).group(1)
     orffile="orfs.dir/{}.orf_peptides".format(sampleName)
@@ -274,7 +276,7 @@ def krakenAnnot(infile,outfile):
 # Generate GTF summarising ORF annotations
 ################################################
 @follows(meganAnnot)
-@follows(krakenAnnot)
+@follows(krakenFormatAnnot)
 @follows(mkdir("combined_annotations.dir"))
 @transform(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides"),r"combined_annotations.dir/\1.orf_annotations.gtf")
 def mergeAnnotations(infile,outfile):

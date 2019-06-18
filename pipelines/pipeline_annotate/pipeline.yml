@@ -83,14 +83,16 @@ General:
 
 ################################################################
 #
-# Kraken Options
+# Kraken2 Options
 #
 ################################################################
 
 Kraken:
-  db: "/gfs/mirror/kraken/mini/minikraken_20171019_8GB/"
+  db: "/gfs/mirror/kraken2/kraken2-microbial-fatfree"
   quick: "false"
   threads: "10"
+  confidence: "0.0"
+  minqual: "0"
   #Gb per cpu
   memory: "5"
 
