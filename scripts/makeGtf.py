@@ -40,7 +40,8 @@ for i in orfs:
 orfs.close()
 
 #add functional annotations to orf dictionary
-funheader=["query_name","seed_eggNOG_ortholog","seed_ortholog_evalue","seed_ortholog_score","predicted_gene_name","GO_terms","KEGG_KO","BiGG_Reactions","Annotation_tax_scope","Matching_OGs","best_OG_evalue_score","COG_functional_categories","eggNOG_HMM_model_annotation"]
+funheader=["query_name","seed_eggNOG_ortholog","seed_ortholog_evalue","seed_ortholog_score","Predicted_taxonomic_group","Predicted_protein_name","Gene_Ontology_terms","EC_number","KEGG_ko","KEGG_Pathway","KEGG_Module","KEGG_Reaction","KEGG_rclass","BRITE","KEGG_TC","CAZy","BiGG_Reaction","tax_scope","eggNOG_OGs","bestOG","COG_Functional_Category","eggNOG_free_text_description"]
+
 for i in funs:
     if i[0] == "#":
             pass

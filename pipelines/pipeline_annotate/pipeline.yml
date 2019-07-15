@@ -32,10 +32,10 @@ Prodigal:
 Eggnogmapper:
 #number of ORFs per chunk
   chunksize: "1000000"
-#paths to exectuable and database files (scracth TRUE if data should be copied into $SCRATCH_DIR)
+#paths to exectuable and database files (scratch TRUE if data should be copied into $SCRATCH_DIR)
   scratch: "true" 
-  eggpath: "/gfs/apps/bio/eggnog-mapper-1.0.3/emapper.py"
-  eggdata: "/gfs/mirror/eggnog-mapper/"
+  eggpath: "/gfs/apps/bio/eggnog-mapper-2.0.0/emapper.py"
+  eggdata: "/gfs/mirror/eggnog-mapper/v2.0.0/"
   method: "diamond"
   tax_scope: "auto"
   target_orthologs: "all"

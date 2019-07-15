@@ -6,6 +6,7 @@ parser = ArgumentParser()
 parser.add_argument("--orf_counts", dest="infile", help="input file with orf counts")
 parser.add_argument("--gtf", dest="gtf", help="gtf file with mapping from orf to features")
 parser.add_argument("--features",dest="feat", help="comma-seperated list of features to enumerate from the gtf and orf counts")
+parser.add_argument("--multimethod",dest="multimethod",help="How to handle counts when a gene maps to multiple annotations of a feature? whole = add the gene's whole count to all of its annotations, split = divide the gene count evenly across its annotations")
 parser.add_argument("--outdir", dest="outdir", help="starting output directory, each feature will be given a child-directory with the sample-level counts")
 parser.add_argument("--logfile", dest="logfile", help="destination for the log file")
 args = parser.parse_args()
@@ -15,6 +16,7 @@ infile = open(args.infile,"rU")
 samplename = re.search("orf_counts.dir/(\S+).tsv",args.infile).group(1)
 gtffile = open(args.gtf,"rU")
 f = args.feat.split(",")
+multimethod = args.multimethod
 
 #parse the counts
 orfcounts={}
@@ -45,11 +47,14 @@ def parseAnnot(geneid,annot):
                 unAnnot(feat,orfcounts[geneid])
             else:
                 vals=val.split(',')
+                obcount=float(orfcounts[geneid])
+                if multimethod == "split":
+                    obcount=obcount/len(vals)
                 for y in vals:
                     if y not in featurecounts[feat]:
                         featurecounts[feat][y]=0.0
-                    featurecounts[feat][y]+=orfcounts[geneid]
-                   
+                    featurecounts[feat][y]+=obcount
+
     
 featurecounts={}
 for i in f:

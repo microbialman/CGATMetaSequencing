@@ -14,12 +14,16 @@ General:
   gtf_dir: "/gfs/devel/majackson/Pipelines/MetaSequencing/testfiles/Annotate/combined_annotations.dir"
   #BEWARE when counting features where a gene can have multiple annotations (e.g. GO_terms) - the total gene count will be added to all of its annotations
   #In these instances it will be important to subset the tables after,eg. just selecting the NOG ids from the Matching_OGs.
-  feature_list: "domain,phylum,class,order,family,genus,species,seed_eggNOG_ortholog,KEGG_KO,Matching_OGs,COG_functional_categories,predicted_gene_name"
+  feature_list: "domain,phylum,class,order,family,genus,species,seed_eggNOG_ortholog,Predicted_protein_name,Gene_Ontology_terms,EC_number,KEGG_ko,KEGG_Pathway,KEGG_Module,KEGG_Reaction,BRITE,BiGG_Reaction,eggNOG_OGs,COG_Functional_Category"
   #features to count combined eg. species + predicted gene name will count genes split by species
   #provide as comma seperated list with pairs split by colons
-  feature_pairs: "predicted_gene_name:species,predicted_gene_name:genus"
+  feature_pairs: "Predicted_protein_name:species,Predicted_protein_name:genus"
   #count TPMs? will normalise gene level counts to TPMs and then generate collapsed TPMs for features as above
   tpm: "true"
+  #How to handle counts when a gene is mapped to multiple annotations of a feature (for instance a gene annotated with multiple GO terms).
+  #"whole" will add the whole gene count to every annotation, "split" will divide the count across the features
+  multimethod: "split"
+
   
 ################################################################
 #

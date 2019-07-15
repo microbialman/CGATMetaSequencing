@@ -6,6 +6,7 @@ parser = ArgumentParser()
 parser.add_argument("--orf_counts", dest="infile", help="input file with orf counts")
 parser.add_argument("--gtf", dest="gtf", help="gtf file with mapping from orf to features")
 parser.add_argument("--feature_pairs",dest="feat", help="comma-seperated list of features to enumerate from the gtf and orf counts")
+parser.add_argument("--multimethod",dest="multimethod",help="How to handle counts when a gene maps to multiple annotations of a feature? whole = add the gene's whole count to all of its annotations, split = divide the gene count evenly across its annotations")
 parser.add_argument("--outdir", dest="outdir", help="starting output directory, each feature will be given a child-directory with the sample-level counts")
 parser.add_argument("--logfile", dest="logfile", help="destination for the log file")
 args = parser.parse_args()
@@ -16,6 +17,7 @@ samplename = re.search("orf_counts.dir/(\S+).tsv",args.infile).group(1)
 gtffile = open(args.gtf,"rU")
 fp = args.feat.split(",")
 fp = [(x.split("_BY_")[0],x.split("_BY_")[1]) for x in fp]
+multimethod = args.multimethod
 
 #parse the counts
 orfcounts={}
@@ -48,18 +50,27 @@ def parsePairedAnnot(geneid,annot):
                 subdic[feat]=val
         for j in fp:
             if j[0] in subdic and j[1] in subdic:
+                obcount=orfcounts[geneid]
+                if multimethod == "split":
+                    obcount=obcount/(len(subdic[j[0]])*len(subdic[j[1]]))
                 for k in subdic[j[0]]:
                     for l in subdic[j[1]]:
                         featname="{}_BY_{}".format(k,l)
-                        featCount(featname,j,orfcounts[geneid])
+                        featCount(featname,j,obcount)
             elif j[0] in subdic:
+                obcount=orfcounts[geneid]
+                if multimethod == "split":
+                    obcount=obcount/len(subdic[j[0]])
                 for k in subdic[j[0]]:
                     featname="{}_BY_UNANNOTATED".format(k)
-                    featCount(featname,j,orfcounts[geneid])
+                    featCount(featname,j,obcount)
             elif j[1] in subdic:
+                obcount=orfcounts[geneid]
+                if multimethod == "split":
+                    obcount=obcount/len(subdic[j[1]])
                 for l in subdic[j[1]]:
                     featname="UNANNOTATED_BY_{}".format(l)
-                    featCount(featname,j,orfcounts[geneid])
+                    featCount(featname,j,obcount)
             else:
                 featname="UNANNOTATED_BY_UNANNOTATED"
                 featCount(featname,j,orfcounts[geneid])
