@@ -6,6 +6,7 @@ import subprocess
 parser = ArgumentParser()
 parser.add_argument("--krakenout",dest="infile", help="Kraken output file to be translated")
 parser.add_argument("--translatedout", dest="outfile", help="Output file name")
+parser.add_argument("--taxdatadir", dest="tddir", help="Directory containing names.dmp and nodes.dmp from NCBI taoxnomy (for TaxonKit, uses taxonkit default if not set).", )
 args = parser.parse_args()
 
 #open the files
@@ -33,7 +34,10 @@ for i in infile:
 taxdic={}
         
 #get the full ineage names for unique taxids using Taxonkit
-taxonkit = subprocess.check_output("echo '{}' | taxonkit lineage | taxonkit reformat".format("\n".join(uniqueids)), shell=True)
+if args.tddir:
+    taxonkit = subprocess.check_output("echo '{}' | taxonkit lineage --data-dir {} | taxonkit reformat --data-dir {}".format("\n".join(uniqueids)), shell=True)
+else:
+    taxonkit = subprocess.check_output("echo '{}' | taxonkit lineage | taxonkit reformat".format("\n".join(uniqueids)), shell=True)
 taxonkit=taxonkit.decode().split("\n")
 
 #taxonomic levels
