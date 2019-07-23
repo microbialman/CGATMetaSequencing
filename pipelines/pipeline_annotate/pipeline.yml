@@ -97,7 +97,7 @@ Kraken:
   memory: "5"
 
 TaxonKit:
-  datadir: ""
+  datadir: "/gfs/mirror/ncbi/taxonomy/taxdump_18_06_19/"
   
   
 ################################################################
