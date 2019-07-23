@@ -15,6 +15,7 @@ library(stringr)
 library(cowplot)
 library(vegan)
 library(ggrepel)
+library(foreach)
 
 features=commandArgs(trailingOnly=T)[1]
 features=strsplit(features,",")[[1]]
@@ -26,7 +27,7 @@ first=read.table(paste0(dir,"/",features[1],"_combined_counts.tsv"),header=T,row
 featsum=function(feature,direct){
    cat("# ",feature,"\n")
    data=read.table(paste0(dir,"/",feature,"_combined_counts.tsv"),header=T,row.names=1,sep="\t",comment.char = "",quote = "")
-   cat("Identified **`",nrow(data),"`** unique ",feature," across all samples.\n\n")
+   cat("Identified **`",nrow(data),"`** unique ",feature," features across all samples.\n\n")
    #order samples alphabetically
    data=data[,order(colnames(data))]
    #plot the top 10 of each feature, particularly useful for taxa (or all if <10)
@@ -55,13 +56,13 @@ featsum=function(feature,direct){
    plot(pplot)
    cat("\n\n")
    #rarefactin plot
-   cat(paste0("Rarefaction curves for counts assigned to ",feature,":"))
+   cat(paste0("Rarefaction curves for counts assigned to ",feature," (labelling, upto 10, lowest samples):"))
    sampmax=colSums(data)
-   raredepths=round(c(seq(from=1,to=max(sampmax),by=(max(sampmax)-1)/50)))
+   raredepths=round(c(seq(from=1,to=max(sampmax),by=(max(sampmax)-1)/20)))
    vals=matrix(nrow=length(raredepths),ncol=ncol(data))
-   for(i in c(1:length(raredepths))){
+   foreach(i=1:length(raredepths)) %dopar% {
      depth=raredepths[i]
-     res=rarefy(t(data), depth)
+     res=rarefy(round(t(data)), depth)
      res[sampmax<depth]=NA
      vals[i,]=res
    }
@@ -71,6 +72,7 @@ featsum=function(feature,direct){
    colnames(raremelt)=c("Depth","Sample","Richness")
    raremelt=raremelt[!is.na(raremelt$Richness),]
    labels=data.frame(Sample=colnames(data),Depth=sampmax,Rich=apply(vals,2,function(x){max(x,na.rm = T)}))
+   labels$Sample=ifelse(rank(labels$Depth)<11,as.character(labels$Sample),NA)
    rplot=ggplot(raremelt,aes(x=Depth,y=Richness,color=Sample))+geom_line()+guides(color=F)+
      geom_label_repel(data=labels,aes(x=Depth,y=Rich,label=Sample))
    plot(rplot)
@@ -86,7 +88,7 @@ Features: *`r paste(features)`*
 
 ```{r,results='asis',echo=FALSE, fig.width=10, warning=FALSE}
 for(i in features){
-  featsum(i,dir)
+   featsum(i,dir)
 }
 ```
 

@@ -13,7 +13,7 @@ General:
   contig_dir: "/gfs/devel/majackson/Pipelines/MetaSequencing/testfiles/Assemble/contigs.dir/metaspades"
   gtf_dir: "/gfs/devel/majackson/Pipelines/MetaSequencing/testfiles/Annotate/combined_annotations.dir"
   #features to count from the taxonomic and functional annotations
-  feature_list: "domain,phylum,class,order,family,genus,species,seed_eggNOG_ortholog,Predicted_protein_name,Gene_Ontology_terms,EC_number,KEGG_ko,KEGG_Pathway,KEGG_Module,KEGG_Reaction,BRITE,BiGG_Reaction,eggNOG_OGs,COG_Functional_Category"
+  feature_list: "domain,phylum,class,order,family,genus,species,Predicted_protein_name,Gene_Ontology_terms,EC_number,KEGG_ko,KEGG_Pathway,KEGG_Module,KEGG_Reaction,BRITE,BiGG_Reaction,eggNOG_OGs,COG_Functional_Category"
   #features to count combined eg. species + predicted gene name will count genes split by species
   #provide as comma seperated list with pairs split by colons
   feature_pairs: "Predicted_protein_name:species,Predicted_protein_name:genus"
@@ -106,5 +106,5 @@ featureCounts:
   memory_otherfeats: "1"
 
 report:
-  memory: "10"
-
+  memory: "20"
+  threads: "10"

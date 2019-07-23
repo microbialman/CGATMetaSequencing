@@ -268,6 +268,8 @@ def full():
 #Make report (uses raw counts not tpms)
 @follows(mkdir("report.dir"))
 def build_report():
+    job_memory = str(PARAMS["report_memory"])+"G"
+    job_threads = int(PARAMS["report_threads"])
     scriptloc = "/".join(os.path.dirname(sys.argv[0]).split("/")[0:-1])+"/scripts/enumeration_report.Rmd"
     statement = 'R -e "rmarkdown::render(\'{}\',output_file=\'{}/report.dir/enumeration_report.html\')" --args {} {}'.format(
         scriptloc,os.getcwd(),",".join(FEATURES),os.getcwd()+"/combined_counts.dir")
