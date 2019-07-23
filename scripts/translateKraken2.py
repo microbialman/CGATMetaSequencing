@@ -35,7 +35,7 @@ taxdic={}
         
 #get the full ineage names for unique taxids using Taxonkit
 if args.tddir:
-    taxonkit = subprocess.check_output("echo '{}' | taxonkit lineage --data-dir {} | taxonkit reformat --data-dir {}".format("\n".join(uniqueids)), shell=True)
+    taxonkit = subprocess.check_output("echo '{}' | taxonkit lineage --data-dir {} | taxonkit reformat --data-dir {}".format("\n".join(uniqueids),args.tddir,args.tddir), shell=True)
 else:
     taxonkit = subprocess.check_output("echo '{}' | taxonkit lineage | taxonkit reformat".format("\n".join(uniqueids)), shell=True)
 taxonkit=taxonkit.decode().split("\n")
