@@ -74,7 +74,7 @@ plot(opcpsplot)
 ```
 
 ````{r, echo=FALSE}
-taxfeats=c("domain","phylum","class","order","family","genus","species")
+taxfeats=c("kingdom","phylum","class","order","family","genus","species")
 tax=gtf[which(gtf$feat_type%in%taxfeats),]
 
 fun=gtf[-which(gtf$feat_type%in%taxfeats),]

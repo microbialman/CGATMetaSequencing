@@ -14,7 +14,7 @@ gtfs = glob.glob(args.gtf+"/*.orf_annotations.gtf")
 
 featdic={}
 
-taxlevs=["domain","phylum","class","order","family","genus","species"]
+taxlevs=["kingdom","phylum","class","order","family","genus","species"]
 
 #open the orf file
 orffile=open(args.orfout,"w")

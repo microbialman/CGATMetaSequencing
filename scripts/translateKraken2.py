@@ -41,7 +41,7 @@ else:
 taxonkit=taxonkit.decode().split("\n")
 
 #taxonomic levels
-levs=["d__","p__","c__","o__","f__","g__","s__"]
+levs=["k__","p__","c__","o__","f__","g__","s__"]
 
 #function to generate the mpa name from a given taxid by calling Taxonkit
 def formName(name):

@@ -55,7 +55,7 @@ for i in funs:
                 orfannotdic[orfname][funheader[j]] = entry[j].replace(" ","")
 
 annotlist =  funheader[1:]
-taxlist = ["domain","phylum","class","order","family","genus","species"]
+taxlist = ["kingdom","phylum","class","order","family","genus","species"]
 for j in taxlist:
        annotlist.append(j)
 
@@ -64,13 +64,13 @@ for i in taxa:
     entry = i.strip("\n").split(";")
     orfname = entry[0]
     if len(entry) >= 4:
-        domain = entry[2]
+        kingdom = entry[2]
     else:
-        domain = "d__unassigned"
+        kingdom = "k__unassigned"
     if len(entry) >= 6:
-        phylum = domain+"|"+entry[4]
+        phylum = kingdom+"|"+entry[4]
     else:
-        phylum = domain+"|"+"p__unassigned"
+        phylum = kingdom+"|"+"p__unassigned"
     if len(entry) >= 8:
         clas = phylum+"|"+entry[6]
     else:
@@ -91,7 +91,7 @@ for i in taxa:
         species = genus+"|"+entry[14]
     else:
         species = genus+"|"+"s__unassigned"
-    valist = [domain, phylum, clas, order, family, genus, species]
+    valist = [kingdom, phylum, clas, order, family, genus, species]
     for j in range(len(valist)):
         orfannotdic[orfname][taxlist[j]] = valist[j]      
         
