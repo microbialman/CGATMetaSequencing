@@ -50,6 +50,8 @@ def formName(name):
     for i in range(len(names)):
         if names[i] != "":
             formnames.append(levs[i]+names[i].replace(" ","_"))
+        else:
+            formnames.append(levs[i]+"unassigned")
     return("|".join(formnames))
 
 #reformat to mpa style
