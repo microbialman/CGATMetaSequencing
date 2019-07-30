@@ -11,7 +11,7 @@ function to build call to Prodigal
 '''
 
 def runProdigal(infile,outfile,params):
-    pcall = ["prodigal -i {} -o {}".format(infile,outfile.rstrip("_peptides")+"_positions")]
+    pcall = ["zcat {} | prodigal -o {}".format(infile,outfile.rstrip("_peptides")+"_positions")]
     pcall.append("-a {}".format(outfile))
     if params["Prodigal_c"] != 'false':
         pcall.append("-c")

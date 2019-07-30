@@ -58,7 +58,7 @@ Usage
 =====
 
 See cgat.org for general
-information how to use CGAT pipelines.
+4information how to use CGAT pipelines.
 
 Configuration
 -------------
@@ -197,13 +197,15 @@ ASSEMBLERS = P.as_list(PARAMS.get("Assembler_assemblers", ""))
 @follows(mkdir("megahit_out.dir"))
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
-           r"megahit_out.dir/\1/\1.contigs.fa")
+           r"megahit_out.dir/\1_complete.log")
 def runMegahit(infile, outfile):
     job_memory = str(PARAMS["Megahit_clus_memory"])+"G"
     job_threads = int(PARAMS["Megahit_clus_threads"])
     seqdat=PipelineAssembly.SequencingData(infile)
     assembler = PipelineAssembly.Megahit(seqdat,"megahit_out.dir",PARAMS)
     statement = assembler.build()
+    statement += " && touch {}".format(outfile)
+    downstream = True
     P.run(statement)
 
 ###################################################
@@ -214,7 +216,7 @@ def runMegahit(infile, outfile):
 @follows(mkdir("metaspades_out.dir"))
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
-           r"metaspades_out.dir/\1/contigs.fasta")
+           r"metaspades_out.dir/\1_complete.log")
 def runMetaspades(infile,outfile):
     job_memory = str(PARAMS["Metaspades_memory"])+"G"
     job_threads = int(PARAMS["Metaspades_threads"])
@@ -222,6 +224,8 @@ def runMetaspades(infile,outfile):
     if seqdat.paired == True:
         assembler = PipelineAssembly.Metaspades(seqdat,"metaspades_out.dir",PARAMS)
         statement = assembler.build()
+        statement += " && touch {}".format(outfile)
+        downstream = True
         P.run(statement)
     else:
         print("cannot run metaspades on file {} as it requires paired-end data".format(seqdat.filename))
@@ -247,33 +251,23 @@ def idbaudInterleave(infile,outfile):
 
 @active_if("idba_ud" in ASSEMBLERS)
 @follows(idbaudInterleave)
-@transform(idbaudInterleave,regex(r"(\S+)/(\S+).(interleaved.fa)"),r"\1/contig.fa")
+@transform(idbaudInterleave,regex(r"(\S+)/(\S+).(interleaved.fa)"),r"\1_complete.log")
 def runIdbaud(infile,outfile):
     job_memory = str(PARAMS["IDBAUD_clus_memory"])+"G"
     job_threads = int(PARAMS["IDBAUD_clus_threads"])
     seqdat = PipelineAssembly.SequencingData(infile)
     assembler = PipelineAssembly.Idbaud(seqdat,"idbaud_out.dir",PARAMS)
     statement = assembler.build()
-    P.run(statement)
-
-###################################################
-# Symlink data together from seperate per file folders
-###################################################
-@follows(runMegahit,runMetaspades,runIdbaud)
-@follows(mkdir("contigs.dir"))
-@transform([runMegahit,runMetaspades,runIdbaud],regex(r'(\S+)_out.dir/(\S+)/(\S+)\..*$'),r'contigs.dir/\1/\2.contigs.fasta')
-def collateContigfiles(infile,outfile):
-    dirs=os.getcwd()+"/"
-    outdir="/".join(outfile.split("/")[0:-1])
-    print(outdir)
-    statement = "mkdir -p {} && ln -s {} {}".format(dirs+outdir,dirs+infile,dirs+outfile)
+    statement += " && touch {}".format(outfile)
+    downstream = True
     P.run(statement)
 
 ###################################################
 # Generate summary stats for contigs
 ###################################################
-@follows(collateContigfiles)
-@transform([runMegahit,runMetaspades,runIdbaud],regex(r'(\S+)/(\S+)/(\S+)\..*$'),r'\1/\2/\3.summary')
+@follows(runMegahit,runMetaspades,runIdbaud)
+@follows(mkdir("contigs.dir"))
+@transform([runMegahit,runMetaspades,runIdbaud],regex(r'(\S+)_out.dir/(\S+)_complete.log'),r'contigs.dir/\1/\2.summary')
 def summariseContigs(infile,outfile):
     #summarise each contigs file 
     statement = PipelineAssembly.SummariseContigs(infile,outfile)
@@ -283,7 +277,6 @@ def summariseContigs(infile,outfile):
 @merge(summariseContigs,'contigs.dir/Contigs.Summary')
 def mergeSummaries(infiles,summaryfile):
     #file to store all the stats combined
-    print(mergeSummaries)
     combstats = os.getcwd()+"/"+summaryfile
     statementlist = []
     in0 = os.getcwd()+"/"+infiles[0] 
@@ -294,36 +287,47 @@ def mergeSummaries(infiles,summaryfile):
     for infile in infiles:
         indir=os.getcwd()+"/"+infile
         insplit=infile.split("/")
-        filen=insplit[1]
-        assem=insplit[0].split("_")[0]
+        filen=insplit[2]
+        assem=insplit[1].split("_")[0]
         #just append the last line and add filename and assembler name
         statementlist.append("tail -1 {} >> {}".format(indir,combstats))
         statementlist.append("sed -i '$s/^/{}\\t{}\\t /' {}".format(filen,assem,combstats))
     statement = " && ".join(statementlist)
     P.run(statement)
+   
+###################################################
+# Symlink data together from seperate per file folders
+###################################################
+@follows(mergeSummaries) 
+@transform([runMegahit,runMetaspades,runIdbaud],regex(r'(\S+)_out.dir/(\S+)_complete.log'),r'contigs.dir/\1/\2.contigs.fasta.gz')
+def collateContigfiles(infile,outfile):
+    print(outfile)
+    dirs=os.getcwd()+"/"
+    outdir="/".join(outfile.split("/")[0:-1])
+    infile=PipelineAssembly.contigLoc(infile)
+    outfile=outfile.replace(".gz","")
+    statement = "mkdir -p {} && mv {} {} && gzip {}".format(dirs+outdir,dirs+infile,dirs+outfile,dirs+outfile)
+    P.run(statement)
     
 ###################################################
 # Clear-up unused directories
 ###################################################
-@follows(mergeSummaries)
+@follows(collateContigfiles)
 def cleanupDirs():
     statementlist=[]
-    if "megahit" not in ASSEMBLERS:
-        statementlist.append("rm -r "+os.path.join(os.getcwd(),"megahit_out.dir/"))
-    if "metaspades" not in ASSEMBLERS:
-        statementlist.append("rm -r "+os.path.join(os.getcwd(),"metaspades_out.dir/"))
-    if "idba_ud" not in ASSEMBLERS:
-        statementlist.append("rm -r "+os.path.join(os.getcwd(),'idbaud_out.dir/'))
-    if statementlist != []:
-        statement=" && ".join(statementlist)
-        P.run(statement)
+    for i in ["megahit","metaspades","idbaud"]:
+        if i in ASSEMBLERS:
+            statementlist.append('find {}* ! -name "*_complete.log" -delete'.format(os.path.join(os.getcwd(),"{}_out.dir/".format(i))))
+        else:
+            statementlist.append("rm -r "+os.path.join(os.getcwd(),"{}_out.dir/".format(i)))
+    statement=" && ".join(statementlist)
+    P.run(statement)
 
 
 @follows(cleanupDirs)
 def full():
     pass
 
-@follows(mergeSummaries)
 @follows(mkdir("report.dir"))
 def build_report():
    scriptloc =  "/".join(os.path.dirname(sys.argv[0]).split("/")[0:-1])+"/scripts/assembly_report.Rmd"

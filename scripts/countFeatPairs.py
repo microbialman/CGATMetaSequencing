@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-import re
+import re, gzip
 
 #get the input and output files
 parser = ArgumentParser()
@@ -12,9 +12,9 @@ parser.add_argument("--logfile", dest="logfile", help="destination for the log f
 args = parser.parse_args()
 
 #open the files
-infile = open(args.infile,"rU")
+infile = gzip.open(args.infile,"rt")
 samplename = re.search("orf_counts.dir/(\S+).tsv",args.infile).group(1)
-gtffile = open(args.gtf,"rU")
+gtffile = gzip.open(args.gtf,"rt")
 fp = args.feat.split(",")
 fp = [(x.split("_BY_")[0],x.split("_BY_")[1]) for x in fp]
 multimethod = args.multimethod

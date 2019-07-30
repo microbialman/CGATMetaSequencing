@@ -1,5 +1,6 @@
 #takes a feature counts output table and generates a version with an additional TPM column
 from argparse import ArgumentParser
+import gzip
 
 #get the input and output files
 parser = ArgumentParser()
@@ -8,7 +9,7 @@ parser.add_argument("--output", dest="outfile", help="output file that will have
 args = parser.parse_args()
 
 #open the files
-infile=open(args.infile,"rU")
+infile=gzip.open(args.infile,"rt")
 outfile=open(args.outfile,"w")
 
 #parse the counts

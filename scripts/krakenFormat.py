@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import gzip
 
 #get the orfs, function and taxonomy annotations from command line
 parser = ArgumentParser()
@@ -9,7 +10,7 @@ args = parser.parse_args()
 
 #load in the ORFs
 orfdic={}
-orffile=open(args.orfs,"rU")
+orffile=gzip.open(args.orfs,"rt")
 for i in orffile:
     if i[0] == ">":
         orfname=i.split(" #")[0].strip(">")
@@ -18,7 +19,7 @@ for i in orffile:
         
 #load in the contig taxonomies
 contigdic={}
-contigfile=open(args.contigs,"rU")
+contigfile=gzip.open(args.contigs,"rt")
 for i in contigfile:
     row=i.strip("\n").split()
     contigdic[row[0]]=row[1].split("|")

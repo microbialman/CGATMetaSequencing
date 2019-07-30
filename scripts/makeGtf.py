@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 import re
+import gzip
 
 #get the orfs, function and taxonomy annotations from command line
 parser = ArgumentParser()
@@ -11,9 +12,9 @@ parser.add_argument("--output-short", dest="shortout", help="Output filename for
 args = parser.parse_args()
 
 #open the files
-orfs = open(args.orfs,'rU')
-funs = open(args.funs,'rU')
-taxa = open(args.taxa,'rU')
+orfs = gzip.open(args.orfs,'rt')
+funs = gzip.open(args.funs,'rt')
+taxa = gzip.open(args.taxa,'rt')
 outfile = open(args.outfile,'w')
 shortout = open(args.shortout,'w')
 

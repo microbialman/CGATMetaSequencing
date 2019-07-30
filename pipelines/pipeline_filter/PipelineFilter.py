@@ -100,9 +100,8 @@ class SortMeRNA:
                 self.statementlist.append("seqtk seq -l0 -2 {} > {}".format(otherf,pair2.strip(".gz")))
                 self.statementlist.append("rm {}".format(otherf))
                 #compress the outputs if inputs were
-                if self.seqdat.compressed == True:
-                    self.statementlist.append("gzip {}".format(pair1.strip(".gz")))
-                    self.statementlist.append("gzip {}".format(pair2.strip(".gz")))
+                self.statementlist.append("gzip {}".format(pair1.strip(".gz")))
+                self.statementlist.append("gzip {}".format(pair2.strip(".gz")))
                     
                 
     #abstract out making reference command as it is long 
@@ -251,13 +250,13 @@ class FilterFromBam:
         else:
             self.statementlist.append("bedtools bamtofastq -i {} -fq {}".format(
                 self.filtered, self.outfile.rstrip(".gz")))
-        #compress if input was
-        if self.seqdat.compressed == True:
-                self.statementlist.append("gzip {}".format(self.outfile.rstrip(".gz")))
-                if self.seqdat.paired == True and self.seqdat.interleaved == False:
-                    self.statementlist.append("gzip {}".format(
-                        self.outdir+"/hostfiltered_"+self.seqdat.pairedname.rstrip(".gz")))
-        
+        #compress
+        self.statementlist.append("gzip {}".format(self.outfile.rstrip(".gz")))
+        if self.seqdat.paired == True and self.seqdat.interleaved == False:
+            self.statementlist.append("gzip {}".format(
+                self.outdir+"/hostfiltered_"+self.seqdat.pairedname.rstrip(".gz")))
+        #remove bam files
+        self.statementlist.append("rm "+self.outdir+"/*.bam")
 
     def build(self):
         return(" && ".join(self.statementlist))

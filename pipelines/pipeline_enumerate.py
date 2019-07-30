@@ -128,14 +128,15 @@ SEQUENCEFILES_REGEX = regex(
 # Make a bowtie indexed database for each sample's contigs
 #############################################################
 @follows(mkdir("contig_databases.dir"))
-@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"contig_databases.dir/\1.contigs.bowtie.1.bt2l")
+@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"contig_databases.dir/\1.contigs.bowtie.log")
 def makeBowtieDbs(infile,outfile):
     filename=re.match(r"(\S+).(fasta$|fasta.gz|fasta.1.gz|fasta.1|fna$|fna.gz|fna.1.gz|fna.1|fa$|fa.gz|fa.1.gz|fa.1|fastq$|fastq.gz|fastq.1.gz|fastq.1)",infile).group(1)
     filemap=PipelineEnumerate.enumerateMapper(filename,PARAMS)
     #call to bowtie2-build
     job_memory = str(PARAMS["BowtieDB_memory"])+"G"
     job_threads = int(PARAMS["BowtieDB_threads"])
-    statement = PipelineEnumerate.buildBowtieDB(filemap.contigpath,outfile.replace(".1.bt2l",""),PARAMS)
+    statement = PipelineEnumerate.buildBowtieDB(filemap.contigpath,outfile.replace(".log",""),PARAMS)
+    statement += " && touch {}".format(outfile)
     P.run(statement)
     
 
@@ -158,7 +159,7 @@ def mapSamples(infile,outfile):
     bowtie.indir = ""
     statementlist = []
     #remove all comments from read names in files (trimming can add comments making non-matching pairs)
-    #only skip if a failure in a previous run at the bowtie step
+    #only skip if there was a failure in a previous run at the bowtie step
     if PARAMS["Bowtie_skip_file_prep"] != "true":
         statementlist.append(bowtie.cleanNames())
     #directory for output
@@ -171,15 +172,26 @@ def mapSamples(infile,outfile):
     statementlist.append("rm {}".format(outfile.replace(".bam",".sam")))
     statement = " && ".join(statementlist)
     P.run(statement)
+
+######################################################
+# Compress the bowtie databases to save space
+######################################################
+@follows(mapSamples)
+@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"contig_databases.dir/\1.contigs.bowtie.1.bt2l.gz")
+def gzipDatabases(infile,outfile):
+    filename=re.match(r"(\S+).(fasta$|fasta.gz|fasta.1.gz|fasta.1|fna$|fna.gz|fna.1.gz|fna.1|fa$|fa.gz|fa.1.gz|fa.1|fastq$|fastq.gz|fastq.1.gz|fastq.1)",infile).group(1)
+    statement = "gzip contig_databases.dir/{}*.bt2l".format(filename)
+    P.run(statement)
     
 ########################################################################
 # Count reads mapping to each ORF using featureCounts and GTF files
 ########################################################################
 @follows(mkdir("orf_counts.dir"))
-@follows(mapSamples)
-@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"orf_counts.dir/\1.tsv")
+@follows(gzipDatabases)
+@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"orf_counts.dir/\1.tsv.gz")
 def countOrfs(infile,outfile):
     feat = "gene_id"
+    outfile = outfile.replace(".gz","")
     filename=re.match(r"(\S+).(fasta$|fasta.gz|fasta.1.gz|fasta.1|fna$|fna.gz|fna.1.gz|fna.1|fa$|fa.gz|fa.1.gz|fa.1|fastq$|fastq.gz|fastq.1.gz|fastq.1)",infile).group(1)
     filemap=PipelineEnumerate.enumerateMapper(filename,PARAMS)
     mapping="sample_mappings.dir/{}/{}.mapped.bam".format(filemap.samplename,filemap.samplename)
@@ -191,7 +203,13 @@ def countOrfs(infile,outfile):
     #generate counts per orf across all samples
     job_threads = int(PARAMS["featureCounts_threads"])
     job_memory = str(PARAMS["featureCounts_memory"])+"G"
-    statement = PipelineEnumerate.countFeatures(feat,filemap.shortgtfpath,paired,outfile,mapping,PARAMS)
+    scratchgtf = PARAMS["featureCounts_tmp"]+filename+".gtf"
+    statementlist = []
+    statementlist.append("zcat {} > {}".format(filemap.shortgtfpath,scratchgtf))
+    statementlist.append(PipelineEnumerate.countFeatures(feat,scratchgtf,paired,outfile,mapping,PARAMS))
+    statementlist.append("gzip {}".format(outfile))
+    statementlist.append("rm -rf {}".format(scratchgtf))
+    statement = " && ".join(statementlist)
     P.run(statement)
 
 ################################################
@@ -199,10 +217,11 @@ def countOrfs(infile,outfile):
 ################################################
 @follows(countOrfs)
 @active_if(PARAMS["General_tpm"]=="true")
-@transform(countOrfs,regex(r"orf_counts.dir/(\S+).tsv"),r"orf_counts.dir/\1.tpm.tsv")
+@transform(countOrfs,regex(r"orf_counts.dir/(\S+).tsv.gz"),r"orf_counts.dir/\1.tpm.tsv.gz")
 def makeTPM(infile,outfile):
     statement = "python {}scripts/makeTPM.py --orf_counts {} --output {}".format(
-        os.path.dirname(__file__).rstrip("pipelines"),infile,outfile)
+        os.path.dirname(__file__).rstrip("pipelines"),infile,outfile.replace(".gz",""))
+    statement += " && gzip {}".format(outfile.replace(".gz",""))
     P.run(statement)
 
 ############################################################

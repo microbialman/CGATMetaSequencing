@@ -5,9 +5,9 @@ class to match the samples to the correct gtfs and mapping files
 class enumerateMapper:
     def __init__(self,samplename,params):
         self.samplename=samplename
-        self.contigpath=params["General_contig_dir"]+"/"+self.samplename+".contigs.fasta"
-        self.gtfpath=params["General_gtf_dir"]+"/"+self.samplename+".contigs.orf_annotations.gtf"
-        self.shortgtfpath=self.gtfpath.replace(".gtf","_short.gtf")
+        self.contigpath=params["General_contig_dir"]+"/"+self.samplename+".contigs.fasta.gz"
+        self.gtfpath=params["General_gtf_dir"]+"/"+self.samplename+".contigs.orf_annotations.gtf.gz"
+        self.shortgtfpath=self.gtfpath.replace(".gtf.gz","_short.gtf.gz")
         try:
             cfile=open(self.contigpath,'r')
         except FileNotFoundError:

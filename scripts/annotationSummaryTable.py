@@ -1,6 +1,7 @@
 #this scrpt generates a summary table of the annotations that can then be used in the report script
 from argparse import ArgumentParser
 import re, glob
+import gzip
 
 #get the orfs, function and taxonomy annotations from commadn line
 parser = ArgumentParser()
@@ -10,7 +11,7 @@ parser.add_argument("--orf-output", dest="orfout", help="ORF summary output file
 args = parser.parse_args()
 
 #get the list of gtfs (full not short) for each sample
-gtfs = glob.glob(args.gtf+"/*.orf_annotations.gtf")
+gtfs = glob.glob(args.gtf+"/*.orf_annotations.gtf.gz")
 
 featdic={}
 
@@ -36,7 +37,7 @@ def featAdd(sample,feat,listed):
 #go through gtf files and record occurences of each feature
 for i in range(len(gtfs)):
     #open annotation
-    gtf=open(gtfs[i],"rU")
+    gtf=gzip.open(gtfs[i],"rt")
     #parse
     for j in gtf:
         row=j.strip("\n").split("\t")

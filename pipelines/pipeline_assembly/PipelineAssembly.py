@@ -233,7 +233,6 @@ class Metaspades(Assembler):
 
     def build(self):
         return self.construct("metaspades.py")
-
 '''
 IDBA-UD assembler class following construction pattern as previously
 '''
@@ -329,10 +328,21 @@ Function to generate summary statistics for the contigs in a fasta file
 def SummariseContigs(infile,outfile):
     dstr=os.getcwd()+"/"
     opath=dstr+outfile
-    ipath=dstr+infile
+    ipath=dstr+contigLoc(infile)
     #call BBMap stats command, generates N50, counts, hist etc.
     command = "stats.sh in={} extended=t format=5 shist={} gchist={} overwrite=true >{}".format(
         ipath,opath+".shist",opath+".gchist",opath)
     return command
 
-    
+"""
+Function to translate the log file location to the contig file location
+"""
+def contigLoc(logfile):
+    sample=re.search("(\S+)/(\S+)_complete.log",logfile).group(2)
+    if re.search("megahit",logfile): 
+        cpath="megahit_out.dir/{}/{}.contigs.fa".format(sample,sample)
+    if re.search("metaspades",logfile):
+        cpath="metaspades_out.dir/{}/contigs.fasta".format(sample,sample)
+    if re.search("idbaud",logfile):
+        cpath="idbaud_out.dir/{}/contig.fa".format(sample,sample)
+    return(cpath)

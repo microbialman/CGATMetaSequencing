@@ -139,7 +139,7 @@ SEQUENCEFILES_REGEX = regex(
 # Find ORFs using prodigal
 ####################################################
 @follows(mkdir("orfs.dir"))
-@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"orfs.dir/\1.orf_peptides")
+@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"orfs.dir/\1.orf_peptides.gz")
 def detectOrfs(infile,outfile):
     statementlist=[]
     #set job memory and threads
@@ -147,9 +147,11 @@ def detectOrfs(infile,outfile):
     job_threads = int(PARAMS["Prodigal_threads"])
     #command to generate index files
     seqdat = PipelineAssembly.SequencingData(infile)
+    #generate outfile without gz
+    outfile=outfile.replace(".gz","")
     #ensure input is FASTA
     if seqdat.paired == True:
-        print("Prodigal requires single/merged (i.e. not paired-end) reads for ORF detection.")
+        print("Cannot detect ORFs from paired-end reads.")
     else:
         if seqdat.fileformat == "fastq":
             statementlist.append("reformat.sh in={} out={}".format(infile,"orfs.dir/"+seqdat.cleanname+".fa"))
@@ -159,6 +161,9 @@ def detectOrfs(infile,outfile):
         #remove the temp FASTA if created
         if seqdat.fileformat == "fastq":
             statementlist.append("rm {}".format("orfs.dir/"+seqdat.cleanname+".fa"))
+        #compress the outputs
+        statementlist.append("gzip {}".format(outfile))
+        statementlist.append("gzip {}".format(outfile.replace("peptides","positions")))
         statement = " && ".join(statementlist)
         P.run(statement)
 
@@ -168,27 +173,28 @@ def detectOrfs(infile,outfile):
 @follows(detectOrfs)
 @follows(mkdir("functional_annotations.dir"))
 @follows(mkdir("functional_annotations.dir/emapper_chunks"))
-@subdivide(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides"),r"functional_annotations.dir/emapper_chunks/\1.*.chunk",r"functional_annotations.dir/emapper_chunks/\1")
+@subdivide(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides.gz"),r"functional_annotations.dir/emapper_chunks/\1.*.chunk.log",r"functional_annotations.dir/emapper_chunks/\1")
 def splitFasta(infile,outfiles,outfileroot):
     statement = "python {}/fastaToChunks.py --input {} --output_prefix {} --chunk_size {}".format(os.path.dirname(os.path.abspath(__file__)).replace("pipelines","scripts"),infile,os.getcwd()+"/"+outfileroot,PARAMS["Eggnogmapper_chunksize"])
     P.run(statement)
 
 @follows(splitFasta)
-@transform(splitFasta,regex(r"functional_annotations.dir/emapper_chunks/(\S+).chunk"),r"functional_annotations.dir/emapper_chunks/\1.chunk.emapper.seed_orthologs")
+@transform(splitFasta,regex(r"functional_annotations.dir/emapper_chunks/(\S+).chunk.log"),r"functional_annotations.dir/emapper_chunks/\1.chunk.emapper.seed_orthologs.log")
 def functionalAnnotSeed(infile,outfile):
     job_memory = str(PARAMS["Eggnogmapper_memory"])+"G"
     job_threads = int(PARAMS["Eggnogmapper_threads"])
     #generate call to eggnog-mapper
     #requires older version of diamond to use the eggnog mapper databases
     statement = "module load bio/diamond/0.8.22 && "
-    statement += PipelineAnnotate.runEggmapSeed(infile,infile,PARAMS)
+    statement += PipelineAnnotate.runEggmapSeed(infile.replace(".log",""),infile.replace(".log",""),PARAMS)
+    statement += " && touch {}".format(outfile)
     P.run(statement)
 
 ###############################################################
 # Functional annotation of the seeds
 ###############################################################
 @follows(functionalAnnotSeed)
-@transform(functionalAnnotSeed,regex(r"functional_annotations.dir/emapper_chunks/(\S+).emapper.seed_orthologs"),r"functional_annotations.dir/emapper_chunks/\1.emapper.annotations")
+@transform(functionalAnnotSeed,regex(r"functional_annotations.dir/emapper_chunks/(\S+).emapper.seed_orthologs.log"),r"functional_annotations.dir/emapper_chunks/\1.emapper.annotations.log")
 def functionalAnnotChunks(infile,outfile):
     job_memory = str(PARAMS["Eggnogmapper_memory_annot"])+"G"
     job_threads = int(str(PARAMS["Eggnogmapper_threads_annot"]))
@@ -200,7 +206,8 @@ def functionalAnnotChunks(infile,outfile):
     else:
         datadir=PARAMS["Eggnogmapper_eggdata"]
     #get annotation from seeds
-    statement.append(PipelineAnnotate.runEggmapAnnot(infile,outfile.replace(".emapper.annotations",""),PARAMS,datadir))
+    statement.append(PipelineAnnotate.runEggmapAnnot(infile.replace(".log",""),outfile.replace(".emapper.annotations.log",""),PARAMS,datadir))
+    statement.append("touch {}".format(outfile))
     statement = " && ".join(statement)
     #run the annotation step
     P.run(statement)
@@ -209,9 +216,14 @@ def functionalAnnotChunks(infile,outfile):
 # Merge the functional annotations
 ##################################################
 @follows(functionalAnnotChunks)
-@collate(functionalAnnotChunks,regex(r"functional_annotations\.dir/emapper_chunks/(\S+)\.[0-9]+\.chunk\.emapper\.annotations"),r"functional_annotations.dir/\1.functional.annotations")
+@collate(functionalAnnotChunks,regex(r"functional_annotations\.dir/emapper_chunks/(\S+)\.[0-9]+\.chunk\.emapper\.annotations.log"),r"functional_annotations.dir/\1.functional.annotations.gz")
 def functionalAnnot(infiles,outfile):
-    statement = "cat {} >> {}".format(" ".join(infiles),outfile)
+    infiles=[x.replace(".log","") for x in infiles]
+    statementlist = ["cat {} >> {}".format(" ".join(infiles),outfile.replace(".gz",""))]
+    statementlist.append("gzip {}".format(outfile.replace(".gz","")))
+    #clean up intermediate files
+    statementlist.append('find {}* ! -name "*.log" -delete'.format(os.path.join(os.getcwd(),"functional_annotations.dir/emapper_chunks/")))
+    statement = " && ".join(statementlist)
     P.run(statement)
 
 ##################################################
@@ -248,13 +260,17 @@ def meganAnnot(infile,outfile):
 @follows(functionalAnnot)
 @follows(mkdir("taxonomic_annotations.dir"))
 @active_if(PARAMS["General_tax_method"]=="kraken")
-@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"taxonomic_annotations.dir/\1.kraken_translated")
+@transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"taxonomic_annotations.dir/\1.kraken_translated.gz")
 def krakenAlignContig(infile,outfile):
     #set memory and threads
     job_memory = str(PARAMS["Kraken_memory"])+"G"
     job_threads = int(PARAMS["Kraken_threads"])
     #generate call to diamond
-    statement = PipelineAnnotate.runKraken(infile,outfile,PARAMS,"{}scripts/translateKraken2.py".format(os.path.dirname(__file__).rstrip("pipelines")))
+    statementlist = [PipelineAnnotate.runKraken(infile,outfile.replace(".gz",""),PARAMS,"{}scripts/translateKraken2.py".format(os.path.dirname(__file__).rstrip("pipelines")))]
+    #compress outputs
+    statementlist.append("gzip {}".format(outfile.replace("translated.gz","out")))
+    statementlist.append("gzip {}".format(outfile.replace(".gz","")))
+    statement= " && ".join(statementlist)
     P.run(statement)
 
 ######################################################################
@@ -262,13 +278,14 @@ def krakenAlignContig(infile,outfile):
 ######################################################################
 @follows(krakenAlignContig)
 @active_if(PARAMS["General_tax_method"]=="kraken")
-@transform(krakenAlignContig,regex(r"taxonomic_annotations.dir/(\S+).kraken_translated"),r"taxonomic_annotations.dir/\1.taxonomic.annotations")
+@transform(krakenAlignContig,regex(r"taxonomic_annotations.dir/(\S+).kraken_translated.gz"),r"taxonomic_annotations.dir/\1.taxonomic.annotations.gz")
 def krakenFormatAnnot(infile,outfile):
     #get the orf names for the sample
-    sampleName=re.search("taxonomic_annotations.dir/(\S+).kraken_translated",infile).group(1)
-    orffile="orfs.dir/{}.orf_peptides".format(sampleName)
+    sampleName=re.search("taxonomic_annotations.dir/(\S+).kraken_translated.gz",infile).group(1)
+    orffile="orfs.dir/{}.orf_peptides.gz".format(sampleName)
     statement="python {}scripts/krakenFormat.py --orfs {} --contig-taxonomy {} --orf-taxonomy-output {}".format(
-        os.path.dirname(__file__).rstrip("pipelines"),orffile,infile,outfile)
+        os.path.dirname(__file__).rstrip("pipelines"),orffile,infile,outfile.replace(".gz",""))
+    statement += " && gzip {}".format(outfile.replace(".gz",""))
     P.run(statement)
 
 
@@ -278,15 +295,17 @@ def krakenFormatAnnot(infile,outfile):
 @follows(meganAnnot)
 @follows(krakenFormatAnnot)
 @follows(mkdir("combined_annotations.dir"))
-@transform(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides"),r"combined_annotations.dir/\1.orf_annotations.gtf")
+@transform(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides.gz"),r"combined_annotations.dir/\1.orf_annotations.gtf.gz")
 def mergeAnnotations(infile,outfile):
-    sampleName=re.search("orfs.dir/(\S+).orf_peptides",infile).group(1)
-    func="functional_annotations.dir/{}.functional.annotations".format(sampleName)
-    tax="taxonomic_annotations.dir/{}.taxonomic.annotations".format(sampleName)
+    sampleName=re.search("orfs.dir/(\S+).orf_peptides.gz",infile).group(1)
+    func="functional_annotations.dir/{}.functional.annotations.gz".format(sampleName)
+    tax="taxonomic_annotations.dir/{}.taxonomic.annotations.gz".format(sampleName)
+    gzless=outfile.replace(".gz","")
     job_memory = str(PARAMS["Merge_memory"])+"G"
-    statement = "python {}scripts/makeGtf.py --orfs {} --functions {} --taxonomy {} --output {} --output-short {}".format(
-        os.path.dirname(__file__).rstrip("pipelines"), infile, func, tax, outfile, outfile.replace(".gtf","_short.gtf")
-    )
+    statementlist = ["python {}scripts/makeGtf.py --orfs {} --functions {} --taxonomy {} --output {} --output-short {}".format(os.path.dirname(__file__).rstrip("pipelines"), infile, func, tax, gzless, gzless.replace(".gtf","_short.gtf"))]
+    statementlist.append("gzip {}".format(gzless.replace(".gtf","_short.gtf")))
+    statementlist.append("gzip {}".format(gzless))
+    statement = " && ".join(statementlist)
     P.run(statement)
 
 @follows(mergeAnnotations)
