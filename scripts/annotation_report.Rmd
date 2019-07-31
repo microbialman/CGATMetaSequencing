@@ -39,6 +39,7 @@ library(ggplot2,quietly = T)
 library(RColorBrewer,quietly = T)
 library(cowplot,quietly = T)
 library(stringr,quietly = T)
+theme_set(theme_cowplot())
 
 #histogram of all ORF lengths
 

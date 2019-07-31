@@ -54,6 +54,9 @@ After host genome filtering files contained **`r format(round(gm),big.mark=",")`
 ```{r, echo=FALSE}
 library(ggplot2)
 library(reshape2)
+library(cowplot)
+theme_set(theme_cowplot())
+
 colnames(sfile)=c("File","Input File","Post rRNA Filtering","Post Host Genome Filtering")
 meltsfile=melt(sfile,id.vars =1)
 readplot=ggplot(meltsfile,aes(x=variable,y=value,color=variable))+xlab("")+ylab("Read Count")+geom_boxplot(outlier.shape=NA)+geom_jitter()+theme_classic()+guides(fill=FALSE,color=FALSE)+scale_color_brewer(type="qual",palette = cpal)

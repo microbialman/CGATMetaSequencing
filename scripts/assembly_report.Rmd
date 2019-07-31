@@ -27,6 +27,8 @@ Metagenomic assembly carried out for **`r fcount`** files using **`r assemblers`
 ```{r, echo=FALSE, results="asis"}
 library(ggplot2)
 library(reshape2)
+library(cowplot)
+theme_set(theme_cowplot())
 
 for(i in unique(sfile$assembler)){
   cat(paste0("## ",i,"\n"))

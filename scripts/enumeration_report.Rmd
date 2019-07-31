@@ -16,6 +16,7 @@ library(cowplot)
 library(vegan)
 library(ggrepel)
 library(foreach)
+theme_set(theme_cowplot())
 
 features=commandArgs(trailingOnly=T)[1]
 features=strsplit(features,",")[[1]]
