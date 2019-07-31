@@ -187,7 +187,7 @@ def functionalAnnotSeed(infile,outfile):
     #requires older version of diamond to use the eggnog mapper databases
     statement = "module load bio/diamond/0.8.22 && "
     statement += PipelineAnnotate.runEggmapSeed(infile.replace(".log",""),infile.replace(".log",""),PARAMS)
-    statement += " && touch {}".format(outfile)
+    statement += ' && echo "Made file {}." > {}'.format(outfile.replace(".log",""),outfile)
     P.run(statement)
 
 ###############################################################
@@ -207,7 +207,7 @@ def functionalAnnotChunks(infile,outfile):
         datadir=PARAMS["Eggnogmapper_eggdata"]
     #get annotation from seeds
     statement.append(PipelineAnnotate.runEggmapAnnot(infile.replace(".log",""),outfile.replace(".emapper.annotations.log",""),PARAMS,datadir))
-    statement.append("touch {}".format(outfile))
+    statement.append('echo "Made file {}." > {}'.format(outfile.replace(".log",""),outfile))
     statement = " && ".join(statement)
     #run the annotation step
     P.run(statement)
@@ -219,10 +219,11 @@ def functionalAnnotChunks(infile,outfile):
 @collate(functionalAnnotChunks,regex(r"functional_annotations\.dir/emapper_chunks/(\S+)\.[0-9]+\.chunk\.emapper\.annotations.log"),r"functional_annotations.dir/\1.functional.annotations.gz")
 def functionalAnnot(infiles,outfile):
     infiles=[x.replace(".log","") for x in infiles]
+    filename=re.search("(\S+).contigs.(\S+).chunk.emapper.annotations",infiles[0]).group(1)
     statementlist = ["cat {} >> {}".format(" ".join(infiles),outfile.replace(".gz",""))]
     statementlist.append("gzip {}".format(outfile.replace(".gz","")))
     #clean up intermediate files
-    statementlist.append('find {}* ! -name "*.log" -delete'.format(os.path.join(os.getcwd(),"functional_annotations.dir/emapper_chunks/")))
+    statementlist.append('find {}* ! -name "*.log" -delete'.format(os.path.join(os.getcwd(),filename)))
     statement = " && ".join(statementlist)
     P.run(statement)
 

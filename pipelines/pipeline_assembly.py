@@ -204,7 +204,7 @@ def runMegahit(infile, outfile):
     seqdat=PipelineAssembly.SequencingData(infile)
     assembler = PipelineAssembly.Megahit(seqdat,"megahit_out.dir",PARAMS)
     statement = assembler.build()
-    statement += " && touch {}".format(outfile)
+    statement += ' && echo "Made file {}." > {}'.format(outfile.replace("_complete.log",""),outfile)
     downstream = True
     P.run(statement)
 
@@ -224,7 +224,7 @@ def runMetaspades(infile,outfile):
     if seqdat.paired == True:
         assembler = PipelineAssembly.Metaspades(seqdat,"metaspades_out.dir",PARAMS)
         statement = assembler.build()
-        statement += " && touch {}".format(outfile)
+        statement += ' && echo "Made file {}." > {}'.format(outfile.replace("_complete.log",""),outfile)
         downstream = True
         P.run(statement)
     else:
@@ -258,7 +258,7 @@ def runIdbaud(infile,outfile):
     seqdat = PipelineAssembly.SequencingData(infile)
     assembler = PipelineAssembly.Idbaud(seqdat,"idbaud_out.dir",PARAMS)
     statement = assembler.build()
-    statement += " && touch {}".format(outfile)
+    statement += ' && echo "Made file {}." > {}'.format(outfile.replace("_complete.log",""),outfile)
     downstream = True
     P.run(statement)
 

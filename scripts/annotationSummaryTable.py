@@ -16,6 +16,8 @@ gtfs = glob.glob(args.gtf+"/*.orf_annotations.gtf.gz")
 featdic={}
 
 taxlevs=["kingdom","phylum","class","order","family","genus","species"]
+nonlistfun=["Predicted_protein_name"]
+listfun=["Gene_Ontology_terms","EC_number","KEGG_ko","KEGG_Pathway","KEGG_Module","KEGG_Reaction","BRITE","BiGG_Reaction","eggNOG_OGs","COG_Functional_Category"]
 
 #open the orf file
 orffile=open(args.orfout,"w")
@@ -29,10 +31,12 @@ def featAdd(sample,feat,listed):
         if featdic[key]["samples"][i]==0:
             featdic[key]["samples"][i]=1
     if listed == False:
-        addDic(feat[1],feat[0])
+        if feat[1] != "":
+            addDic(feat[1],feat[0])
     else:
         for x in feat[1].split(","):
-            addDic(x,feat[0])
+            if x != "":
+                addDic(x,feat[0])
 
 #go through gtf files and record occurences of each feature
 for i in range(len(gtfs)):
@@ -50,20 +54,11 @@ for i in range(len(gtfs)):
         annotations=[x.split('"') for x in row[-1].split(";")]
         for k in annotations[1:]:
             k[0]=k[0].strip(" ")
-            if k[0] == "predicted_gene_name":
+            if k[0] in nonlistfun or k[0] in taxlevs:
                 featAdd(i,k,False)
-            if k[0] == "GO_terms":
+            elif k[0] in listfun:
                 featAdd(i,k,True)
-            if k[0] == "KEGG_KO":
-                featAdd(i,k,True)
-            if k[0] == "BiGG_Reactions":
-                featAdd(i,k,True)
-            if k[0] == "COG_functional_categories":
-                featAdd(i,k,True)
-            elif k[0] in taxlevs:
-                featAdd(i,k,False)
 orffile.close()
-
 
 #write the output file
 outfile=open(args.outfile,"w")

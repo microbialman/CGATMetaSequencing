@@ -136,7 +136,7 @@ def makeBowtieDbs(infile,outfile):
     job_memory = str(PARAMS["BowtieDB_memory"])+"G"
     job_threads = int(PARAMS["BowtieDB_threads"])
     statement = PipelineEnumerate.buildBowtieDB(filemap.contigpath,outfile.replace(".log",""),PARAMS)
-    statement += " && touch {}".format(outfile)
+    statement += ' && echo "Made file {}." > {}'.format(outfile.replace(".log",""),outfile)
     P.run(statement)
     
 

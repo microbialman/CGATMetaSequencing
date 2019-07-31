@@ -53,7 +53,10 @@ for i in funs:
             if j == 0:
                 pass
             else:
-                orfannotdic[orfname][funheader[j]] = entry[j].replace(" ","")
+                entry[j]=entry[j].replace(" ","")
+                if funheader[j]=="COG_Functional_Category":
+                    entry[j]=",".join(list(entry[j]))
+                orfannotdic[orfname][funheader[j]] = entry[j]
 
 annotlist =  funheader[1:]
 taxlist = ["kingdom","phylum","class","order","family","genus","species"]
