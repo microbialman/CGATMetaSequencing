@@ -56,6 +56,8 @@ for i in funs:
                 entry[j]=entry[j].replace(" ","")
                 if funheader[j]=="COG_Functional_Category":
                     entry[j]=",".join(list(entry[j]))
+                if funheader[j]=="KEGG_Pathway" and entry[j] != "":
+                    entry[j]=entry[j].split(",map")[0]
                 orfannotdic[orfname][funheader[j]] = entry[j]
 
 annotlist =  funheader[1:]
