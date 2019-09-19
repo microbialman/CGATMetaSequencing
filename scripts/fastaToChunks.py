@@ -26,13 +26,13 @@ chunklog.write("Chunk no. {}.".format(current_chunk))
 #write chunks
 for i in fasta:
     i=i.decode()
-    print(i)
     if i[0]==">":
         if read_count == chunk:
             chunkfile.close()
             chunklog.close()
             current_chunk+=1
             chunkfile=open(outpre+".{}.chunk".format(current_chunk),"w")
+            chunklog=open(outpre+".{}.chunk.log".format(current_chunk),"w")
             chunklog.write("Chunk no. {}.".format(current_chunk))
             read_count = 0
         else:

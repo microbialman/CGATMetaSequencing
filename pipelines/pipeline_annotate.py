@@ -223,7 +223,7 @@ def functionalAnnot(infiles,outfile):
     statementlist = ["cat {} >> {}".format(" ".join(infiles),outfile.replace(".gz",""))]
     statementlist.append("gzip {}".format(outfile.replace(".gz","")))
     #clean up intermediate files
-    statementlist.append('find {}* ! -name "*.log" -delete'.format(os.path.join(os.getcwd(),filename)))
+    statementlist.append('find {}.* ! -name "*.log" -delete'.format(os.path.join(os.getcwd(),filename)))
     statement = " && ".join(statementlist)
     P.run(statement)
 

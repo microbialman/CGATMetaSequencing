@@ -296,7 +296,7 @@ def mergeSummaries(infiles,summaryfile):
     P.run(statement)
    
 ###################################################
-# Symlink data together from seperate per file folders
+# Merge data together from seperate per file folders
 ###################################################
 @follows(mergeSummaries) 
 @transform([runMegahit,runMetaspades,runIdbaud],regex(r'(\S+)_out.dir/(\S+)_complete.log'),r'contigs.dir/\1/\2.contigs.fasta.gz')

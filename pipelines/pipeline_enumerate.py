@@ -180,7 +180,7 @@ def mapSamples(infile,outfile):
 @transform(SEQUENCEFILES,SEQUENCEFILES_REGEX,r"contig_databases.dir/\1.contigs.bowtie.1.bt2l.gz")
 def gzipDatabases(infile,outfile):
     filename=re.match(r"(\S+).(fasta$|fasta.gz|fasta.1.gz|fasta.1|fna$|fna.gz|fna.1.gz|fna.1|fa$|fa.gz|fa.1.gz|fa.1|fastq$|fastq.gz|fastq.1.gz|fastq.1)",infile).group(1)
-    statement = "gzip contig_databases.dir/{}*.bt2l".format(filename)
+    statement = "gzip contig_databases.dir/{}.*.bt2l".format(filename)
     P.run(statement)
     
 ########################################################################
