@@ -80,11 +80,10 @@ Bowtie:
 ################################################################
 featureCounts:
 #number of chunks to divide GTF file (set as 1 for no chunking, can increase speed for very large GTFs)
-  chunk: "2"
   f: "GTF"
-  t: "ORF"
-  o: "true"
-  minoverlap: "1"
+  t: "ORF" 
+  o: "true" 
+  minoverlap: "1" 
   fracoverlap: "0"
   fracoverlapfeature: "0"
   largestoverlap: "false"
