@@ -30,7 +30,9 @@ Prodigal:
 ######################################################################
 
 Eggnogmapper:
-#number of ORFs per chunk
+  #skip the functional annotation if it has already been run and appropriate files exist (allows deletion of large intermediate files)
+  skip: "false"
+  #number of ORFs per chunk
   chunksize: "1000000"
 #paths to exectuable and database files (scratch TRUE if data should be copied into $SCRATCH_DIR)
   scratch: "true" 

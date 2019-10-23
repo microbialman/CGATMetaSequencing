@@ -173,12 +173,14 @@ def detectOrfs(infile,outfile):
 @follows(detectOrfs)
 @follows(mkdir("functional_annotations.dir"))
 @follows(mkdir("functional_annotations.dir/emapper_chunks"))
+@active_if(PARAMS["Eggnogmapper_skip"]=="false")
 @subdivide(detectOrfs,regex(r"orfs.dir/(\S+).orf_peptides.gz"),r"functional_annotations.dir/emapper_chunks/\1.*.chunk.log",r"functional_annotations.dir/emapper_chunks/\1")
 def splitFasta(infile,outfiles,outfileroot):
     statement = "python {}/fastaToChunks.py --input {} --output_prefix {} --chunk_size {}".format(os.path.dirname(os.path.abspath(__file__)).replace("pipelines","scripts"),infile,os.getcwd()+"/"+outfileroot,PARAMS["Eggnogmapper_chunksize"])
     P.run(statement)
 
 @follows(splitFasta)
+@active_if(PARAMS["Eggnogmapper_skip"]=="false")
 @transform(splitFasta,regex(r"functional_annotations.dir/emapper_chunks/(\S+).chunk.log"),r"functional_annotations.dir/emapper_chunks/\1.chunk.emapper.seed_orthologs.log")
 def functionalAnnotSeed(infile,outfile):
     job_memory = str(PARAMS["Eggnogmapper_memory"])+"G"
@@ -194,6 +196,7 @@ def functionalAnnotSeed(infile,outfile):
 # Functional annotation of the seeds
 ###############################################################
 @follows(functionalAnnotSeed)
+@active_if(PARAMS["Eggnogmapper_skip"]=="false")
 @transform(functionalAnnotSeed,regex(r"functional_annotations.dir/emapper_chunks/(\S+).emapper.seed_orthologs.log"),r"functional_annotations.dir/emapper_chunks/\1.emapper.annotations.log")
 def functionalAnnotChunks(infile,outfile):
     job_memory = str(PARAMS["Eggnogmapper_memory_annot"])+"G"
@@ -216,6 +219,7 @@ def functionalAnnotChunks(infile,outfile):
 # Merge the functional annotations
 ##################################################
 @follows(functionalAnnotChunks)
+@active_if(PARAMS["Eggnogmapper_skip"]=="false")
 @collate(functionalAnnotChunks,regex(r"functional_annotations\.dir/emapper_chunks/(\S+)\.[0-9]+\.chunk\.emapper\.annotations.log"),r"functional_annotations.dir/\1.functional.annotations.gz")
 def functionalAnnot(infiles,outfile):
     infiles=[x.replace(".log","") for x in infiles]
