@@ -186,8 +186,11 @@ def functionalAnnotSeed(infile,outfile):
     job_memory = str(PARAMS["Eggnogmapper_memory"])+"G"
     job_threads = int(PARAMS["Eggnogmapper_threads"])
     #generate call to eggnog-mapper
-    #requires older version of diamond to use the eggnog mapper databases
-    statement = "module load bio/diamond/0.8.22 && "
+    #option to add commands to load specific versions of diamond and python2 etc. if needed
+    if PARAMS["Eggnogmapper_preload"] not in ["","false"]:
+        statement = "{} &&".format(PARAMS["Eggnogmapper_preload"])
+    else:
+        statement = ""
     statement += PipelineAnnotate.runEggmapSeed(infile.replace(".log",""),infile.replace(".log",""),PARAMS)
     statement += ' && echo "Made file {}." > {}'.format(outfile.replace(".log",""),outfile)
     P.run(statement)
@@ -202,6 +205,9 @@ def functionalAnnotChunks(infile,outfile):
     job_memory = str(PARAMS["Eggnogmapper_memory_annot"])+"G"
     job_threads = int(str(PARAMS["Eggnogmapper_threads_annot"]))
     statement=[]
+    #option to add commands to load specific versions of diamond and python2 etc. if needed
+    if PARAMS["Eggnogmapper_preload"] not in ["","false"]:
+        statement.append("{}".format(PARAMS["Eggnogmapper_preload"]))
     if PARAMS["Eggnogmapper_scratch"] == "true":
         #copy the db into fast local SSD
         statement.append("cp {}eggnog.db $SCRATCH_DIR/eggnog.db".format(PARAMS["Eggnogmapper_eggdata"]))

@@ -32,6 +32,8 @@ Prodigal:
 Eggnogmapper:
   #skip the functional annotation if it has already been run and appropriate files exist (allows deletion of large intermediate files)
   skip: "false"
+  #option to specify additional commands that are run before eggnogmapper (specifically useful to load a specific version of diamond based on the eggnogmapper database), if giving muliple arguements, split with &&, set to false to skip
+  preload: "module load bio/diamond/0.8.22 && module load apps/python/2.7.11"
   #number of ORFs per chunk
   chunksize: "1000000"
 #paths to exectuable and database files (scratch TRUE if data should be copied into $SCRATCH_DIR)
