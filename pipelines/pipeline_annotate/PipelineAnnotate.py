@@ -209,7 +209,7 @@ def runKraken(infile,outfile,params,taxformscript):
         kcall.append("--minimum-base-quality {}".format(params["Kraken_minqual"]))
     kcall.append(infile)
     #add call to kraken translating script
-    kcall.append(" && python {} --krakenout {} --translatedout {}".format(taxformscript,intermediate,outfile))
+    kcall.append(" && python {} --krakenout {} --translatedout {} --taxaprefixes {}".format(taxformscript,intermediate,outfile,params["TaxonKit_taxonpre"]))
     if params["TaxonKit_datadir"] != "" and params["TaxonKit_datadir"] != "false":
         kcall.append("--taxdatadir {}".format(params["TaxonKit_datadir"]))
     return(" ".join(kcall))

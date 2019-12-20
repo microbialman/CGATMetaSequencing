@@ -92,17 +92,18 @@ General:
 ################################################################
 
 Kraken:
-  db: "/gfs/mirror/kraken2/kraken2-microbial-fatfree"
+  db: "/gfs/mirror/kraken2/GTDB_release89"
   quick: "false"
-  threads: "10"
+  threads: "13"
   confidence: "0.0"
   minqual: "0"
   #Gb per cpu
-  memory: "5"
+  memory: "10"
 
 TaxonKit:
-  datadir: "/gfs/mirror/ncbi/taxonomy/taxdump_18_06_19/"
-  
+  datadir: "/gfs/mirror/kraken2/GTDB_release89/taxdump"
+  #set taxonpre to "True" if the taxonomy used has p__ etc. already in the taxon names (e.g. the GTDB)
+  taxonpre: "True"
   
 ################################################################
 #

@@ -7,6 +7,7 @@ parser = ArgumentParser()
 parser.add_argument("--krakenout",dest="infile", help="Kraken output file to be translated")
 parser.add_argument("--translatedout", dest="outfile", help="Output file name")
 parser.add_argument("--taxdatadir", dest="tddir", help="Directory containing names.dmp and nodes.dmp from NCBI taoxnomy (for TaxonKit, uses taxonkit default if not set).", )
+parser.add_argument("--taxaprefixes", dest="tpre", help="Set to True is the taxonomy databases already includes p__ etc. in its taxonomy names (e.g. GTDB databases).")
 args = parser.parse_args()
 
 #open the files
@@ -49,7 +50,10 @@ def formName(name):
     formnames = []
     for i in range(len(names)):
         if names[i] != "":
-            formnames.append(levs[i]+names[i].replace(" ","_"))
+            namestr=names[i]
+            if args.tpre == "True":
+                namestr=namestr[3:]
+            formnames.append(levs[i]+namestr.replace(" ","_"))
         else:
             formnames.append(levs[i]+"unassigned")
     return("|".join(formnames))
