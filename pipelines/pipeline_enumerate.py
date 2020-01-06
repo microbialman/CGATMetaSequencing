@@ -278,6 +278,8 @@ def combineCounts(outfile):
     statement = "python {}scripts/combineCounts.py --feature {} --countdir {} --outfile {} --tpm false".format(os.path.dirname(__file__).rstrip("pipelines"),feat,"annotation_counts.dir",outfile)
     if PARAMS["General_tpm"]=="true":    
         statement += " && python {}scripts/combineCounts.py --feature {} --countdir {} --outfile {} --tpm true".format(os.path.dirname(__file__).rstrip("pipelines"),feat,"annotation_counts.dir",outfile.replace("tsv","tpm.tsv"))
+    job_threads = int(PARAMS["combineCounts_threads"])
+    job_memory = str(PARAMS["combineCounts_memory"])+"G"
     P.run(statement)    
 
 @follows(combineCounts)

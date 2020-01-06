@@ -104,6 +104,14 @@ featureCounts:
   threads_otherfeats: "15"
   memory_otherfeats: "1"
 
+###################
+# Script Options
+###################
+
+combineCounts:
+  threads: "1"
+  memory: "15"
+
 report:
   memory: "20"
   threads: "10"
