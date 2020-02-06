@@ -120,18 +120,11 @@ SEQUENCEFILES = ("*.fasta", "*.fasta.gz", "*.fasta.1.gz", "*.fasta.1",
 SEQUENCEFILES_REGEX = regex(
     r"(\S+).(fasta$|fasta.gz|fasta.1.gz|fasta.1|fna$|fna.gz|fna.1.gz|fna.1|fa$|fa.gz|fa.1.gz|fa.1|fastq$|fastq.gz|fastq.1.gz|fastq.1)")
 
-#only run if filtering is turned on in the pipeline.ini
-def checkEnabled():
-    if PARAMS["General_rrna_filter"] != "true" and PARAMS["General_host_filter"] != "true":
-        print("Neither rRNA or host filtering selected in pipeline.ini, at least one must be enabled.")
-        sys.exit()
-
 ####################################################
 # SortMeRNA steps
 ####################################################
 #first make an index for the rRNA reference files
 @active_if(PARAMS["General_rrna_filter"] == "true" and PARAMS["SortMeRNA_rna_index"] == "false")
-@follows(checkEnabled)
 @follows(mkdir("ref_index.dir"))
 @transform(PARAMS["SortMeRNA_rna_refs"].split(","),
           regex(r"^(.+)/([^/]+)$"),
