@@ -59,9 +59,19 @@ for i in funs:
                 if funheader[j]=="KEGG_Pathway" and entry[j] != "":
                     listed=entry[j].split(",")
                     entry[j]=",".join([x for x in listed if x[0:3]=="map"])
+                #manually extract COGs from eggnog mapper OG list
+                if funheader[j]=="eggNOG_OGs" and entry[j] != "":
+                    listed=entry[j].split(",")
+                    cogs=[]
+                    for k in listed:
+                        if k[0:3] == "COG":
+                            if k.split("@")[0] not in cogs:
+                                cogs.append(k.split("@")[0])
+                    orfannotdic[orfname]["COGs"] = ",".join(cogs)
                 orfannotdic[orfname][funheader[j]] = entry[j]
 
 annotlist =  funheader[1:]
+annotlist.append("COGs")
 taxlist = ["kingdom","phylum","class","order","family","genus","species"]
 for j in taxlist:
        annotlist.append(j)

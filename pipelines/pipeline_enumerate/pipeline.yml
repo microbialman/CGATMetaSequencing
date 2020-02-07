@@ -13,10 +13,10 @@ General:
   contig_dir: "/gfs/devel/majackson/Pipelines/MetaSequencing/testfiles/Assemble/contigs.dir/metaspades"
   gtf_dir: "/gfs/devel/majackson/Pipelines/MetaSequencing/testfiles/Annotate/combined_annotations.dir"
   #features to count from the taxonomic and functional annotations
-  feature_list: "kingdom,phylum,class,order,family,genus,species,Predicted_protein_name,Gene_Ontology_terms,EC_number,KEGG_ko,KEGG_Pathway,KEGG_Module,KEGG_Reaction,BRITE,BiGG_Reaction,eggNOG_OGs,COG_Functional_Category"
+  feature_list: "kingdom,phylum,class,order,family,genus,species,Predicted_protein_name,Gene_Ontology_terms,EC_number,KEGG_ko,KEGG_Pathway,KEGG_Module,KEGG_Reaction,BRITE,BiGG_Reaction,eggNOG_OGs,COG_Functional_Category,COGs"
   #features to count combined eg. species + predicted gene name will count genes split by species
   #provide as comma seperated list with pairs split by colons
-  feature_pairs: "Predicted_protein_name:species,Predicted_protein_name:genus"
+  feature_pairs: "Predicted_protein_name:species,Predicted_protein_name:genus,COGs:species,COGs:genus,KEGG_ko:species,KEGG_ko:genus"
   #count TPMs? will normalise gene level counts to TPMs and then generate collapsed TPMs for features as above
   tpm: "true"
   #How to handle counts when a gene is mapped to multiple annotations of a feature (for instance a gene annotated with multiple GO terms).
